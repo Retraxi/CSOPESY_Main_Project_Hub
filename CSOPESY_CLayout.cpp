@@ -17,7 +17,6 @@ int main()
 
 	while (running)
 	{
-		
 		ConsoleManager::getInstance()->process();
 		ConsoleManager::getInstance()->drawConsole();
 

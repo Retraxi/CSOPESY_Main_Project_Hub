@@ -17,6 +17,7 @@ void Screen::printProcessInfo() const
 
 Screen::Screen(std::shared_ptr<Process> process, String processName) : AConsole(processName)
 {
+	this->refreshed = false;
 	this->attachedProcess = process;
 }
 
@@ -46,6 +47,7 @@ void Screen::process()
 	}
 	else if (command == "exit")
 	{
+		system("cls");
 		ConsoleManager::getInstance()->returnToPreviousConsole();
 		ConsoleManager::getInstance()->unregisterScreen(this->name);
 	}
@@ -57,5 +59,4 @@ void Screen::process()
 void Screen::display()
 {
 	//not sure about this
-	printProcessInfo();
 }

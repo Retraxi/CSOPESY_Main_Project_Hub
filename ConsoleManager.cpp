@@ -2,7 +2,6 @@
 
 
 
-
 ConsoleManager* ConsoleManager::sharedInstance = nullptr;
 ConsoleManager* ConsoleManager::getInstance()
 {
@@ -78,10 +77,6 @@ void ConsoleManager::unregisterScreen(std::string screenName)
 	}
 }
 
-int ConsoleManager::tableSize() {
-	return this->consoleTable.size();
-}
-
 void ConsoleManager::registerScreen(std::shared_ptr<Screen> screenRef) 
 { 
 	if (this->consoleTable.contains(screenRef->getName()))
@@ -108,6 +103,18 @@ void ConsoleManager::switchToScreen(std::string screenName)
 	}
 }
 
+int ConsoleManager::tableSize()
+{
+	return this->consoleTable.size();
+}
+
+void ConsoleManager::printScreens()
+{
+	for (auto const& i : this->consoleTable) {
+		std::cout << "Process name: " << i.first << std::endl;
+	}
+}
+
 ConsoleManager::ConsoleManager()
 {
 	this->running = true;
@@ -117,8 +124,10 @@ ConsoleManager::ConsoleManager()
 
 	//Declaration of initial special consoles
 	const std::shared_ptr<MainConsole> mainConsole = std::make_shared<MainConsole>();
+	const std::shared_ptr<MarqueeConsole> marqueeConsole = std::make_shared<MarqueeConsole>();
 
 	this->consoleTable[MAIN_CONSOLE] = mainConsole;
+	this->consoleTable[MARQUEE_CONSOLE] = marqueeConsole;
 	
 
 	this->switchConsole(MAIN_CONSOLE);

@@ -1,5 +1,6 @@
 #include "Process.h"
 
+
 std::string Process::getName() 
 {
 	return this->processName;

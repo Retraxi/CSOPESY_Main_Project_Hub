@@ -132,6 +132,7 @@
     <ClCompile Include="ConsoleManager.cpp" />
     <ClCompile Include="CSOPESY_CLayout.cpp" />
     <ClCompile Include="MainConsole.cpp" />
+    <ClCompile Include="MarqueeConsole.cpp" />
     <ClCompile Include="Process.cpp" />
     <ClCompile Include="Screen.cpp" />
   </ItemGroup>
@@ -139,6 +140,7 @@
     <ClInclude Include="AConsole.h" />
     <ClInclude Include="ConsoleManager.h" />
     <ClInclude Include="MainConsole.h" />
+    <ClInclude Include="MarqueeConsole.h" />
     <ClInclude Include="Process.h" />
     <ClInclude Include="Screen.h" />
   </ItemGroup>
