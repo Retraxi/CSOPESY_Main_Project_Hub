@@ -7,6 +7,7 @@
 #include <queue>
 #include <mutex>
 #include <condition_variable>
+#include <atomic>
 
 using namespace std;
 
@@ -21,14 +22,14 @@ struct Process {
 queue<Process> processQueue;
 mutex mtx;
 condition_variable cv;
-bool finished = false;
+atomic<bool> finished(false);
 const int NUM_CORES = 4;
-bool coresBusy[NUM_CORES] = {false};
+atomic<bool> coresBusy[NUM_CORES] = { false };
 
 // Function to get current timestamp
 string getTimestamp() {
     time_t now = time(0);
-    tm *ltm = localtime(&now);
+    tm* ltm = localtime(&now);
     char timestamp[20];
     strftime(timestamp, sizeof(timestamp), "(%m/%d/%Y %I:%M:%S%p)", ltm);
     return string(timestamp);
@@ -56,31 +57,44 @@ void executeProcess(Process p, int coreId) {
 // Function to simulate CPU cores
 void cpuWorker(int coreId) {
     while (!finished) {
-        unique_lock<mutex> lock(mtx);
-        cv.wait(lock, [] { return !processQueue.empty() || finished; });
+        Process p;
+        {
+            unique_lock<mutex> lock(mtx);
+            cv.wait(lock, [] { return !processQueue.empty() || finished; });
 
-        if (!processQueue.empty()) {
+            if (finished && processQueue.empty()) {
+                return; // Exit the thread if the scheduler is finished and no more processes are left
+            }
+
             // Get the next process in the queue
-            Process p = processQueue.front();
-            processQueue.pop();
-            coresBusy[coreId] = true;
-
-            lock.unlock();  // Unlock during process execution
-
-            // Execute the process
-            executeProcess(p, coreId);
-
-            // Mark core as free
-            lock.lock();
-            coresBusy[coreId] = false;
+            if (!processQueue.empty()) {
+                p = processQueue.front();
+                processQueue.pop();
+                coresBusy[coreId] = true;
+            }
+            else {
+                continue;
+            }
         }
+
+        // Execute the process outside of the lock
+        executeProcess(p, coreId);
+
+        // Mark core as free after finishing the process
+        coresBusy[coreId] = false;
     }
 }
 
 // Function to simulate the scheduler
 void scheduler() {
-    while (!processQueue.empty() || any_of(begin(coresBusy), end(coresBusy), [](bool busy) { return busy; })) {
+    while (true) {
+        unique_lock<mutex> lock(mtx);
+        if (processQueue.empty()) {
+            break;
+        }
+
         cv.notify_all();  // Wake up CPU worker threads
+        lock.unlock();
         this_thread::sleep_for(chrono::seconds(1)); // Scheduler checks every second
     }
 
@@ -91,17 +105,23 @@ void scheduler() {
 // Function to display running and finished processes
 void displayProcesses() {
     unique_lock<mutex> lock(mtx);
-    cout << "Running processes:" << endl;
+    cout << "\nRunning processes:" << endl;
+    bool hasRunning = false;
     for (int i = 0; i < NUM_CORES; i++) {
         if (coresBusy[i]) {
             cout << "Core:" << i << " is running a process." << endl;
+            hasRunning = true;
         }
+    }
+    if (!hasRunning) {
+        cout << "No processes are currently running." << endl;
     }
 
     cout << "\nFinished processes:" << endl;
-    if (processQueue.empty() && !any_of(begin(coresBusy), end(coresBusy), [](bool busy) { return busy; })) {
+    if (processQueue.empty() && !hasRunning) {
         cout << "All processes are finished!" << endl;
-    } else {
+    }
+    else {
         cout << "Some processes are still running." << endl;
     }
 }
@@ -110,7 +130,7 @@ void displayProcesses() {
 int main() {
     // Create 10 processes with 100 print commands each
     for (int i = 1; i <= 10; i++) {
-        Process p = {"process" + to_string(i), 100, time(0)};
+        Process p = { "process" + to_string(i), 100, time(0) };
         processQueue.push(p);
     }
 
@@ -130,14 +150,15 @@ int main() {
         cin >> command;
         if (command == "screen -ls") {
             displayProcesses();
-        } else if (command == "exit") {
+        }
+        else if (command == "exit") {
             break;
         }
     }
 
     // Wait for the scheduler and core threads to finish
     schedulerThread.join();
-    for (thread &t : coreThreads) {
+    for (thread& t : coreThreads) {
         t.join();
     }
 
