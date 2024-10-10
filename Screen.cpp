@@ -1,6 +1,8 @@
 #include "Screen.h"
 #include "ConsoleManager.h"
 #include <iostream>
+#include <filesystem>  
+
 
 void Screen::printProcessInfo() const
 {
@@ -58,5 +60,6 @@ void Screen::process()
 
 void Screen::display()
 {
-	//not sure about this
+	    std::cout << "Screen " << this->name << " is now active." << std::endl;
+
 }
