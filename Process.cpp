@@ -120,6 +120,7 @@ void Process::execute()
 	}
 	else
 	{
+		std::cout << "Completed!" << std::endl;
 		//it's done
 		std::time_t now = std::time(nullptr);
 		// Convert time to local time (tm struct)

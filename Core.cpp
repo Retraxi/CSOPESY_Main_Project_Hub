@@ -43,7 +43,7 @@ void Core::execute()
 		{
 			//deallocate the process
 			this->ready = true;
-			
+			this->process = nullptr;
 			this->running = false;
 		}
 	}

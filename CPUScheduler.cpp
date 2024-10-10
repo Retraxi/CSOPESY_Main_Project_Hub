@@ -54,11 +54,10 @@ void CPUScheduler::startScheduler(int choice)
 
 void CPUScheduler::printRunningProcesses()
 {
+	
 	for (size_t i = 0; i < cpuCores.size(); i++)
 	{
 		//check each core for a running process
-		std::cout << cpuCores[i]->getProcess()->getName() << std::endl;
-
 		if (this->cpuCores[i]->isRunning() && this->cpuCores[i]->getProcess() != nullptr)
 		{
 			//get the info needed from the process
@@ -69,6 +68,7 @@ void CPUScheduler::printRunningProcesses()
 			temp << this->cpuCores[i]->getProcess()->getCurrentInstructionLines() << " / " << this->cpuCores[i]->getProcess()->getTotalInstructionLines();
 			std::cout << std::left << std::setw(13) << temp.str() << std::endl;
 		}
+
 	}
 }
 
