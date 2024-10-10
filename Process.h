@@ -20,14 +20,23 @@ public:
 	Process(int pid, std::string name);
 	~Process() = default;
 	int pid;
+	
 
 	std::string getName();
 	int getProcessID() const;
-	int getCurrentInstructionLine() const;
 	int getTotalInstructionLines() const;
+	void setCoreID(int coreID);
+	void testInitFCFS();
+
+	void execute();
+	bool isDone() const;
 
 private:
-	std::string processName;
+	int coreID;
 	int currentInstructionLine;
-	int totalInstructionLines;
+
+	std::tm* createdAt;
+	std::tm* finishedAt;
+	std::string processName;
+	std::vector<std::string> instructionList; 
 };

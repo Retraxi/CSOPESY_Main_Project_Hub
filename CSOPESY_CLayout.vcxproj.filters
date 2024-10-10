@@ -36,6 +36,12 @@
     <ClCompile Include="MarqueeConsole.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Core.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CPUScheduler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Screen.h">
@@ -54,6 +60,12 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="MarqueeConsole.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Core.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CPUScheduler.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

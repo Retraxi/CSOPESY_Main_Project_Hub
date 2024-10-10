@@ -130,6 +130,8 @@
   <ItemGroup>
     <ClCompile Include="AConsole.cpp" />
     <ClCompile Include="ConsoleManager.cpp" />
+    <ClCompile Include="Core.cpp" />
+    <ClCompile Include="CPUScheduler.cpp" />
     <ClCompile Include="CSOPESY_CLayout.cpp" />
     <ClCompile Include="MainConsole.cpp" />
     <ClCompile Include="MarqueeConsole.cpp" />
@@ -139,6 +141,8 @@
   <ItemGroup>
     <ClInclude Include="AConsole.h" />
     <ClInclude Include="ConsoleManager.h" />
+    <ClInclude Include="Core.h" />
+    <ClInclude Include="CPUScheduler.h" />
     <ClInclude Include="MainConsole.h" />
     <ClInclude Include="MarqueeConsole.h" />
     <ClInclude Include="Process.h" />

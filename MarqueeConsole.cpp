@@ -39,7 +39,8 @@ void MarqueeConsole::onEnabled()
 	//initialization
 	this->marqueeHandle = GetStdHandle(STD_OUTPUT_HANDLE);
 	this->isRunning = true;
-	thread keyboardPoller();
+	thread keyboardPoller(&MarqueeConsole::keyboardPolling, this); //??? save me
+	keyboardPoller.detach();
 }
 
 void MarqueeConsole::display()
