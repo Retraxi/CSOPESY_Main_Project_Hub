@@ -1,12 +1,11 @@
 #pragma once
 #include "Process.h"
+#include <mutex>
 
 
 class Core 
 {
 public:
-	
-	
 	//declarations
 	Core(int coreID);
 	~Core() = default;
@@ -18,13 +17,16 @@ public:
 	bool isReady();
 
 	int getID();
+	void shutdown();
 	void run();
 	void execute();
 
 private:
+	std::mutex mtx;
 	bool running;
 	bool ready;
+	bool stop;
 
-	int simulationDelay = 50;
+	int simulationDelay = 100;
 	std::shared_ptr<Process> process = nullptr;
 };

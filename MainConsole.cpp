@@ -1,5 +1,6 @@
 #include "MainConsole.h"
 #include "ConsoleManager.h"
+#include "CPUScheduler.h"
 #include <iostream>
 #include <string>
 
@@ -77,8 +78,21 @@ void MainConsole::process()
 	}
 	else if (command.substr(0, 10) == "screen -ls")
 	{
-		std::cout << "Number of processes: " << ConsoleManager::getInstance()->tableSize() << std::endl;
-		ConsoleManager::getInstance()->printScreens();
+		//std::cout << "Number of processes: " << ConsoleManager::getInstance()->tableSize() << std::endl;
+		//ConsoleManager::getInstance()->printScreens();
+		std::cout << "--------------------------------------------------" << std::endl;//60
+		std::cout << "Running processes: " << std::endl;
+		//function to print running processes
+		CPUScheduler::getInstance()->printRunningProcesses();
+		std::cout <<  std::endl;
+		std::cout << "Finished processes: " << std::endl;
+		//function to print out finished processes
+		CPUScheduler::getInstance()->printFinishedProcesses();
+		std::cout << "--------------------------------------------------" << std::endl;//60
+
+	}
+	else if (command.substr(0, 10) == "startFCFS") {
+		CPUScheduler::getInstance()->startScheduler(1);
 	}
 	else if (command == "exit")
 	{

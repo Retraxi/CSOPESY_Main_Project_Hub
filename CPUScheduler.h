@@ -6,13 +6,15 @@ class CPUScheduler
 {
 	//this will be the detached thread
 public:
-	 void initialize();
+	static void initialize();
 	static CPUScheduler* getInstance();
 	static void destroy();
 
 	void addProcess(std::shared_ptr<Process> process);
 
 	void startScheduler(int choice);
+	void printRunningProcesses();
+	void printFinishedProcesses();
 	//void run();
 	//void execute();
 
@@ -23,6 +25,7 @@ private:
 	static CPUScheduler* sharedInstance;
 
 	void FCFSScheduler();
+	std::mutex mtx;
 
 	bool testing = true;
 	bool isRunning = false;

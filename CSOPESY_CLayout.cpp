@@ -8,12 +8,15 @@
 #include <string>
 #include <sstream>
 #include "ConsoleManager.h"
+#include "CPUScheduler.h"
 
 int main()
 {
     bool running = true;
 
 	ConsoleManager::initialize();
+	CPUScheduler::initialize();
+	
 
 	while (running)
 	{
@@ -26,6 +29,7 @@ int main()
 
 	//close everything
 	ConsoleManager::destroy();
+	CPUScheduler::destroy();
 }
 
 // Run program: Ctrl + F5 or Debug > Start Without Debugging menu

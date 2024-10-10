@@ -2,6 +2,7 @@
 #include <memory>
 #include <vector>
 #include <string>
+#include <mutex>
 
 class Process {
 	//what's needed in a process
@@ -25,6 +26,13 @@ public:
 	std::string getName();
 	int getProcessID() const;
 	int getTotalInstructionLines() const;
+	int getCurrentInstructionLines();
+	int getCoreID();
+
+	tm* getCreatedAt();
+	tm* getFinishedAt();
+
+
 	void setCoreID(int coreID);
 	void testInitFCFS();
 
@@ -32,6 +40,8 @@ public:
 	bool isDone() const;
 
 private:
+	std::mutex mtx;
+
 	int coreID;
 	int currentInstructionLine;
 

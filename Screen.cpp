@@ -9,7 +9,7 @@ void Screen::printProcessInfo() const
 
 	std::cout << "Process ID: " << this->attachedProcess->getProcessID() << std::endl;
 
-	std::cout << "Current instruction line: " << this->attachedProcess->getCurrentInstructionLine() << std::endl;
+	std::cout << "Current instruction line: " << this->attachedProcess->getCurrentInstructionLines() << std::endl;
 
 	std::cout << "Total instruction lines: " << this->attachedProcess->getTotalInstructionLines() << std::endl;
 }
