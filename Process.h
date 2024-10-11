@@ -31,13 +31,14 @@ public:
 
 	tm* getCreatedAt();
 	tm* getFinishedAt();
+	void setFinishedAt(tm* finishedAt);
 
 
 	void setCoreID(int coreID);
 	void testInitFCFS();
 
 	void execute();
-	bool isDone() const;
+	bool isDone();
 
 private:
 	std::mutex mtx;

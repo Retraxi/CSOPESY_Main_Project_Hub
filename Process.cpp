@@ -48,6 +48,11 @@ tm* Process::getFinishedAt()
 	return this->finishedAt;
 }
 
+void Process::setFinishedAt(tm* finishedAt)
+{
+	this->finishedAt = finishedAt;
+}
+
 void Process::testInitFCFS()
 {
 	//specifically for the FCFS scheduler stuff
@@ -58,10 +63,15 @@ void Process::testInitFCFS()
 	}
 }
 
-bool Process::isDone() const
+bool Process::isDone()
 {
 	if (currentInstructionLine >= instructionList.size())
 	{
+		//std::cout << processName << " has finished!";
+		//it's done
+		std::time_t now = std::time(nullptr);
+		// Convert time to local time (tm struct)
+		setFinishedAt(std::localtime(&now));
 		return true;
 	}
 	else {
@@ -117,13 +127,5 @@ void Process::execute()
 			currentInstructionLine++;
 			output.close();
 		}
-	}
-	else
-	{
-		std::cout << "Completed!" << std::endl;
-		//it's done
-		std::time_t now = std::time(nullptr);
-		// Convert time to local time (tm struct)
-		this->finishedAt = std::localtime(&now);
 	}
 }

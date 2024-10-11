@@ -93,6 +93,7 @@ void MainConsole::process()
 	}
 	else if (command.substr(0, 10) == "startFCFS") {
 		CPUScheduler::getInstance()->startScheduler(1);
+		std::cout << std::endl << "FCFS scheduler has started." << std::endl;
 	}
 	else if (command == "exit")
 	{

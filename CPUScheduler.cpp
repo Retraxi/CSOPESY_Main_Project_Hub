@@ -58,7 +58,7 @@ void CPUScheduler::printRunningProcesses()
 	for (size_t i = 0; i < cpuCores.size(); i++)
 	{
 		//check each core for a running process
-		if (this->cpuCores[i]->isRunning() && this->cpuCores[i]->getProcess() != nullptr)
+		if (this->cpuCores[i]->getProcess() != nullptr)
 		{
 			//get the info needed from the process
 			std::cout << std::left << std::setw(11) << this->cpuCores[i]->getProcess()->getName() << " ";
@@ -82,7 +82,7 @@ void CPUScheduler::printFinishedProcesses()
 			//get the info needed from the process
 			std::cout << std::left << std::setw(11) << processList[i]->getName() << " ";
 			std::cout << std::left << std::setw(23) << std::put_time(processList[i]->getFinishedAt(), "(%d/%m/%Y %I:%M:%S%p) ") << "   ";
-			std::cout << std::left << std::setw(7) << processList[i]->getCoreID() << "   ";
+			std::cout << std::left << std::setw(7) << "Finished" << "   ";
 			std::stringstream temp;
 			temp << processList[i]->getCurrentInstructionLines() << " / " << processList[i]->getTotalInstructionLines();
 			std::cout << std::left << std::setw(13) << temp.str() << std::endl;

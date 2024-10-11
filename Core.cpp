@@ -24,7 +24,7 @@ int Core::getID()
 void Core::run()
 {
 	while (!this->stop) {
-		std::lock_guard<std::mutex> lock(this->mtx);
+		std::lock_guard<std::mutex> lock(this->mtx); //files were going haywire without this
 		this->execute();
 		std::this_thread::sleep_for(std::chrono::milliseconds(simulationDelay)); //allows for some time difference
 	}
