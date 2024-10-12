@@ -13,4 +13,5 @@ public:
 private:
 	bool refresh = false;
 	void printHeader(); //the very top
+	void printProcesses();
 };

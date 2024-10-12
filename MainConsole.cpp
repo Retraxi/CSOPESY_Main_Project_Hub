@@ -1,5 +1,6 @@
 #include "MainConsole.h"
 #include "ConsoleManager.h"
+#include "CPUScheduler.h"
 #include <iostream>
 #include <string>
 
@@ -23,13 +24,12 @@ void MainConsole::printHeader() //Header function
 
 void MainConsole::display()
 {
-	//not really sure what to put in here for now
-	printHeader();
+	//empty for now
 }
 
 MainConsole::MainConsole() : AConsole("MAIN_CONSOLE")
 {
-	
+	this->refresh = false;
 }
 
 void MainConsole::onEnabled()
@@ -37,11 +37,16 @@ void MainConsole::onEnabled()
 
 }
 
+void MainConsole::printProcesses()
+{
+	ConsoleManager::getInstance()->printScreens();
+}
+
 void MainConsole::process()
 {
-	if (this->refresh = false) {
+	if (this->refresh == false) {
 		printHeader();
-		refresh = true;
+		this->refresh = true;
 	}
 	std::cout << "Enter a command:";
 
@@ -54,8 +59,14 @@ void MainConsole::process()
 	else if (command.substr(0,9) == "screen -r")
 	{
 		//need error checker here
-		ConsoleManager::getInstance()->switchToScreen(command.substr(10));
-		this->refresh = false; //when exiting back will re-print the header
+		if (command.length() < 10)
+		{
+			std::cout << "Command incomplete." << std::endl;
+		}
+		else {
+			ConsoleManager::getInstance()->switchToScreen(command.substr(10));
+			this->refresh = false; //when exiting back will re-print the header
+		}
 	}
 	else if (command.substr(0, 9) == "screen -s")
 	{
@@ -67,7 +78,22 @@ void MainConsole::process()
 	}
 	else if (command.substr(0, 10) == "screen -ls")
 	{
-		std::cout << "Number of processes: " << ConsoleManager::getInstance()->tableSize() << std::endl;
+		//std::cout << "Number of processes: " << ConsoleManager::getInstance()->tableSize() << std::endl;
+		//ConsoleManager::getInstance()->printScreens();
+		std::cout << "--------------------------------------------------" << std::endl;//60
+		std::cout << "Running processes: " << std::endl;
+		//function to print running processes
+		CPUScheduler::getInstance()->printRunningProcesses();
+		std::cout <<  std::endl;
+		std::cout << "Finished processes: " << std::endl;
+		//function to print out finished processes
+		CPUScheduler::getInstance()->printFinishedProcesses();
+		std::cout << "--------------------------------------------------" << std::endl;//60
+
+	}
+	else if (command.substr(0, 10) == "startFCFS") {
+		CPUScheduler::getInstance()->startScheduler(1);
+		std::cout << std::endl << "FCFS scheduler has started." << std::endl;
 	}
 	else if (command == "exit")
 	{

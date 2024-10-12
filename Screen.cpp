@@ -1,6 +1,8 @@
 #include "Screen.h"
 #include "ConsoleManager.h"
 #include <iostream>
+#include <filesystem>  
+
 
 void Screen::printProcessInfo() const
 {
@@ -9,7 +11,7 @@ void Screen::printProcessInfo() const
 
 	std::cout << "Process ID: " << this->attachedProcess->getProcessID() << std::endl;
 
-	std::cout << "Current instruction line: " << this->attachedProcess->getCurrentInstructionLine() << std::endl;
+	std::cout << "Current instruction line: " << this->attachedProcess->getCurrentInstructionLines() << std::endl;
 
 	std::cout << "Total instruction lines: " << this->attachedProcess->getTotalInstructionLines() << std::endl;
 }
@@ -17,6 +19,7 @@ void Screen::printProcessInfo() const
 
 Screen::Screen(std::shared_ptr<Process> process, String processName) : AConsole(processName)
 {
+	this->refreshed = false;
 	this->attachedProcess = process;
 }
 
@@ -46,6 +49,7 @@ void Screen::process()
 	}
 	else if (command == "exit")
 	{
+		system("cls");
 		ConsoleManager::getInstance()->returnToPreviousConsole();
 		ConsoleManager::getInstance()->unregisterScreen(this->name);
 	}
@@ -56,6 +60,6 @@ void Screen::process()
 
 void Screen::display()
 {
-	//not sure about this
-	printProcessInfo();
+	    std::cout << "Screen " << this->name << " is now active." << std::endl;
+
 }

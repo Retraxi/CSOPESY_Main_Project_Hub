@@ -7,8 +7,10 @@
 #include "Screen.h"
 #include <iostream>
 #include "MainConsole.h"
+#include "MarqueeConsole.h"
 
 const std::string MAIN_CONSOLE = "MAIN_CONSOLE";
+const std::string MARQUEE_CONSOLE = "MARQUEE_CONSOLE";
 
 class ConsoleManager
 {
@@ -23,6 +25,7 @@ public:
 	void process() const;
 	void switchConsole(std::string consoleName);
 
+	void printScreens();
 	int tableSize();
 
 	void registerScreen(std::shared_ptr<Screen> screenRef);
@@ -32,6 +35,7 @@ public:
 	void returnToPreviousConsole();
 	void exitApplication();
 	bool isRunning() const;
+	
 	//HANDLE getConsoleHandle() const; //not being used for now
 
 private:
