@@ -39,14 +39,23 @@ void CPUScheduler::destroy()
 	delete sharedInstance;
 }
 
-void CPUScheduler::startScheduler(int choice)
+void CPUScheduler::startScheduler(std::string choice)
 {
-	if (choice == 1)
+	if (choice == "fcfs")
 	{
 		if (!this->isRunning)
 		{
 			this->isRunning = true;
 			std::thread newThread(&CPUScheduler::FCFSScheduler, this);
+			newThread.detach(); //One thread for the scheduler
+		}
+	}
+	else if ("rr")
+	{
+		if (!this->isRunning)
+		{
+			this->isRunning = true;
+			std::thread newThread(&CPUScheduler::RRScheduler, this);
 			newThread.detach(); //One thread for the scheduler
 		}
 	}
@@ -126,6 +135,59 @@ void CPUScheduler::FCFSScheduler()
 					this->unfinishedQueue.pop();
 					this->isRunning = true;
 				}
+			}
+		}
+	}
+}
+
+void CPUScheduler::RRScheduler(int quantumCycle)
+{
+	//this value gets reset every now and then to get the difference
+	auto begin = std::chrono::steady_clock::now();
+
+	//pop process out after quantum cycle passes
+	while (this->isRunning)
+	{
+		//between the clocks steady_clock is used since it's suggested for measuring intervals
+		//like quantumCycles
+		auto cycleTimer = std::chrono::steady_clock::now(); //this is the active time of the too
+		auto currentCycle = std::chrono::duration_cast<std::chrono::seconds>(begin - cycleTimer).count(); //kind of like a tick counter
+		//Process removal section
+		if ( currentCycle > quantumCycle) {
+			//it's `>` because it needs to remove the processes after the final tick passes
+			//e.g. if quantum is 4 then this will proc at 5
+			for (size_t i = 0; i < cpuCores.size(); i++)
+			{
+				if (this->cpuCores[i]->getProcess() != nullptr)
+				{
+					//get the process and put it into the queue
+					this->unfinishedQueue.push(cpuCores[i]->getProcess());
+					cpuCores[i]->setProcess(nullptr);
+					cpuCores[i]->setReady(true);
+				}
+			}
+			//reset the timer for next cycle
+			begin = std::chrono::steady_clock::now();
+		}
+
+		//Process Assignment section
+		for (size_t i = 0; i < cpuCores.size(); i++)
+		{
+			if (this->cpuCores[i]->getProcess() != nullptr)
+			{
+				//check if done
+				if (this->cpuCores[i]->getProcess()->isDone())
+				{
+					this->cpuCores[i]->setProcess(nullptr); //remove the process
+					this->cpuCores[i]->setReady(true);
+				}
+			}
+			if (!this->unfinishedQueue.empty() && this->cpuCores[i]->getProcess() == nullptr)
+			{
+				//get from the to be processed processes
+				this->cpuCores[i]->setProcess(this->unfinishedQueue.front());
+				this->unfinishedQueue.pop();
+				this->isRunning = true;
 			}
 		}
 	}

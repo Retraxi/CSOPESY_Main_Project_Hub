@@ -12,7 +12,7 @@ public:
 
 	void addProcess(std::shared_ptr<Process> process);
 
-	void startScheduler(int choice);
+	void startScheduler(std::string choice);
 	void printRunningProcesses();
 	void printFinishedProcesses();
 	//void run();
@@ -25,6 +25,7 @@ private:
 	static CPUScheduler* sharedInstance;
 
 	void FCFSScheduler();
+	void RRScheduler(int quantumCycle);
 	std::mutex mtx;
 
 	bool testing = true;

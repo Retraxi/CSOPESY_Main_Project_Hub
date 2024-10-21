@@ -14,7 +14,9 @@ public:
 	void setProcess(std::shared_ptr<Process> process); 
 	std::shared_ptr<Process> getProcess();
 	bool isRunning();
+	
 	bool isReady();
+	void setReady(bool status);
 
 	int getID();
 	void shutdown();

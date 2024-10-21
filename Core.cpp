@@ -54,6 +54,11 @@ bool Core::isReady()
 	return this->ready;
 }
 
+void Core::setReady(bool status)
+{
+	this->ready = false;
+}
+
 void Core::setProcess(std::shared_ptr<Process> process)
 {
 	if (this->process == nullptr)
