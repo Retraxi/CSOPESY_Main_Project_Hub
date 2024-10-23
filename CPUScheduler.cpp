@@ -82,9 +82,10 @@ void CPUScheduler::generateProcesses() {
 	std::random_device rd; 
 	std::mt19937 gen(rd()); 
 	std::uniform_int_distribution<> distr(this->minIns, this->maxIns);
-	std::shared_ptr<Process> dummy = std::make_shared<Process>(ConsoleManager::getInstance()->tableSize() + 1, "process_" + std::to_string(ConsoleManager::getInstance()->tableSize() + 1));
+	std::shared_ptr<Process> dummy = std::make_shared<Process>(ConsoleManager::getInstance()->tableSize() - 2, "process_" + std::to_string(ConsoleManager::getInstance()->tableSize() - 2)); // -2 pffset cause of MAIN and MARQUEE
 	//set the amount of instructions based on the given range from the config
 	dummy->setInstruction(distr(gen));
+	addProcess(dummy);
 }
 
 void CPUScheduler::printRunningProcesses()
@@ -142,13 +143,14 @@ void CPUScheduler::printCoreInfo() {
 	int util = (activeCores / (activeCores + availableCores)) * 100;
 
 	//printing
-	std::cout << "CPU Utilization: " << util << "\\%" << std::endl;
+	std::cout << "CPU Utilization: " << util << "\%" << std::endl;
 	std::cout << "Cores used: " << activeCores << std::endl;
 	std::cout << "Cores available: " << availableCores << std::endl;
 }
 
 void CPUScheduler::FCFSScheduler()
 {
+	//std::cout << "FCFSScheduler started!" << std::endl;
 	this->cycleCount = 0;
 	while (this->isRunning)
 	{
@@ -175,7 +177,8 @@ void CPUScheduler::FCFSScheduler()
 			}
 		}
 		//end of cpu cycle
-		if (cycleCount % batchProcessFrequency) {
+		if (cycleCount % batchProcessFrequency == 0) {
+			//std::cout << "New Process generated." << std::endl;
 			generateProcesses();
 		}
 		cycleCount++;
@@ -185,6 +188,7 @@ void CPUScheduler::FCFSScheduler()
 void CPUScheduler::RRScheduler(int quantumCycle)
 {
 	//this value gets reset every now and then to get the difference
+	//std::cout << "RRScheduler started!" << std::endl;
 	auto begin = std::chrono::steady_clock::now();
 	this->cycleCount = 0;
 	//pop process out after quantum cycle passes
@@ -234,9 +238,11 @@ void CPUScheduler::RRScheduler(int quantumCycle)
 		}
 
 		//end of cycle
-		if (cycleCount % batchProcessFrequency) {
+		if (cycleCount % batchProcessFrequency == 0) {
+			//std::cout << "New Process generated." << std::endl;
 			generateProcesses();
 		}
+		//std::cout << cycleCount % batchProcessFrequency << std::endl;
 		cycleCount++;
 
 	}

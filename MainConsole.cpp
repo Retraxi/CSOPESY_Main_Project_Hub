@@ -163,6 +163,8 @@ void MainConsole::process()
 					miIns, maIns,
 					dpEx
 				);
+
+				this->initialized = true;
 			}
 
 		}
