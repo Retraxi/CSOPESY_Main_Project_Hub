@@ -20,6 +20,7 @@ public:
 	void printRunningProcesses();
 	void printFinishedProcesses();
 	void printCoreInfo();
+	void generateProcesses();
 	//void run();
 	//void execute();
 

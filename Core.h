@@ -7,7 +7,7 @@ class Core
 {
 public:
 	//declarations
-	Core(int coreID);
+	Core(int coreID, int execDelay);
 	~Core() = default;
 	int coreID;
 
@@ -30,6 +30,6 @@ private:
 	bool stop;
 	int totalTicks = 0;
 
-	int simulationDelay = 100;
+	int simulationDelay;
 	std::shared_ptr<Process> process = nullptr;
 };

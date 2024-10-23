@@ -63,6 +63,14 @@ void Process::testInitFCFS()
 	}
 }
 
+void Process::setInstruction(int totalCount) {
+	std::string instruction = "Hello world from " + processName;
+	for (size_t i = 0; i < totalCount; i++)
+	{
+		instructionList.push_back(instruction);
+	}
+}
+
 bool Process::isDone()
 {
 	if (currentInstructionLine >= instructionList.size())

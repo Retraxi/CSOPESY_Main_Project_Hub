@@ -3,6 +3,7 @@
 #include <iostream>
 #include <iomanip>
 #include <sstream>
+#include <random>
 
 CPUScheduler* CPUScheduler::sharedInstance = nullptr;
 
@@ -45,8 +46,9 @@ void CPUScheduler::initialize(int cpuNum, std::string schedulerType,
 	for (size_t i = 1; i < sharedInstance->coresTotal + 1; i++)
 	{
 		//make a core
-		sharedInstance->cpuCores.push_back(std::make_shared<Core>(i)); //0 indexed
+		sharedInstance->cpuCores.push_back(std::make_shared<Core>(i, execDelay)); //0 indexed
 	}
+	sharedInstance->startScheduler(schedulerType);
 }
 
 void CPUScheduler::destroy()
@@ -74,6 +76,15 @@ void CPUScheduler::startScheduler(std::string choice)
 			newThread.detach(); //One thread for the scheduler
 		}
 	}
+}
+
+void CPUScheduler::generateProcesses() {
+	std::random_device rd; 
+	std::mt19937 gen(rd()); 
+	std::uniform_int_distribution<> distr(this->minIns, this->maxIns);
+	std::shared_ptr<Process> dummy = std::make_shared<Process>(ConsoleManager::getInstance()->tableSize() + 1, "process_" + std::to_string(ConsoleManager::getInstance()->tableSize() + 1));
+	//set the amount of instructions based on the given range from the config
+	dummy->setInstruction(distr(gen));
 }
 
 void CPUScheduler::printRunningProcesses()
@@ -138,18 +149,7 @@ void CPUScheduler::printCoreInfo() {
 
 void CPUScheduler::FCFSScheduler()
 {
-	/*if (testing == true) {
-		//create the weird processlist
-		for (size_t i = 1; i <= 10; i++)
-		{
-			//10 processes with 100 print commands
-			std::shared_ptr<Process> dummy = std::make_shared<Process>(i, "process_" + std::to_string(i));
-			//std::cout << dummy->getName() << std::endl;
-			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-			dummy->testInitFCFS();
-			addProcess(dummy);
-		}
-	}*/
+	this->cycleCount = 0;
 	while (this->isRunning)
 	{
 		for (size_t i = 0; i < cpuCores.size(); i++)
@@ -174,6 +174,11 @@ void CPUScheduler::FCFSScheduler()
 				}
 			}
 		}
+		//end of cpu cycle
+		if (cycleCount % batchProcessFrequency) {
+			generateProcesses();
+		}
+		cycleCount++;
 	}
 }
 
@@ -181,6 +186,7 @@ void CPUScheduler::RRScheduler(int quantumCycle)
 {
 	//this value gets reset every now and then to get the difference
 	auto begin = std::chrono::steady_clock::now();
+	this->cycleCount = 0;
 	//pop process out after quantum cycle passes
 	while (this->isRunning)
 	{
@@ -189,7 +195,7 @@ void CPUScheduler::RRScheduler(int quantumCycle)
 		auto cycleTimer = std::chrono::steady_clock::now(); //this is the active time of the too
 		auto currentCycle = std::chrono::duration_cast<std::chrono::seconds>(begin - cycleTimer).count(); //kind of like a tick counter
 		//Process removal section
-		if ( currentCycle > quantumCycle) {
+		if (currentCycle > quantumCycle) {
 			//it's `>` because it needs to remove the processes after the final tick passes
 			//e.g. if quantum is 4 then this will proc at 5
 			for (size_t i = 0; i < cpuCores.size(); i++)
@@ -226,5 +232,12 @@ void CPUScheduler::RRScheduler(int quantumCycle)
 				this->isRunning = true;
 			}
 		}
+
+		//end of cycle
+		if (cycleCount % batchProcessFrequency) {
+			generateProcesses();
+		}
+		cycleCount++;
+
 	}
 }

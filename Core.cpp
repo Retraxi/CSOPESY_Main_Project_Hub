@@ -1,12 +1,13 @@
 #include "Core.h"
 #include <thread>
 
-Core::Core(int coreID)
+Core::Core(int coreID, int execDelay)
 {
 	this->stop = false;
 	this->coreID = coreID;
 	this->ready = true;
 	this->running = false;
+	this->simulationDelay = execDelay;
 	std::thread runningThread(&Core::run, this); //One thread per Core worker
 	runningThread.detach();
 }	

@@ -147,7 +147,8 @@ void MainConsole::process()
 				unsigned int bpFreq = stoul(configTable["batch-process-freq"]);
 				unsigned int miIns = stoul(configTable["min-ins"]);
 				unsigned int maIns = stoul(configTable["max-ins"]);
-				unsigned int dpEx;
+				unsigned int dpEx = 0; //if it's somehow empty
+
 				if (configTable["delays-per-exec"] == "\0")
 				{
 					dpEx = 0;
