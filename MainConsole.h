@@ -12,6 +12,7 @@ public:
 	void display() override;
 private:
 	bool refresh = false;
+	bool initialized = false;
 	void printHeader(); //the very top
 	void printProcesses();
 };

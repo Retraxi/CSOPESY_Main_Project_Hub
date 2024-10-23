@@ -16,17 +16,32 @@ CPUScheduler::CPUScheduler()
 
 }
 
+
 void CPUScheduler::addProcess(std::shared_ptr<Process> process)
 {
 	std::lock_guard<std::mutex> lock(this->mtx);
+	//std::shared_ptr<Process> newProcess = std::make_shared<Process>(ConsoleManager::getInstance()->tableSize() + 1, command.substr(10));
+	//make a screen for this process and add it to the console manager
+	std::shared_ptr<Screen> newScreen = std::make_shared<Screen>(process, process->getName());
+	ConsoleManager::getInstance()->registerScreen(newScreen);
 	this->processList.push_back(process);
 	this->unfinishedQueue.push(process);
 }
 
-void CPUScheduler::initialize()
+void CPUScheduler::initialize(int cpuNum, std::string schedulerType, 
+							  unsigned int quantumCycles, unsigned int batchProcessFreq,
+							  unsigned int minIns, unsigned int maxIns,
+							  unsigned int execDelay)
 {
 	//make the cpulist
-	sharedInstance = new CPUScheduler(); //like in ConsoleManager
+	sharedInstance = new CPUScheduler(); //like in ConsoleManager/
+	sharedInstance->coresTotal = cpuNum;
+	sharedInstance->quantumCycles = quantumCycles;
+	sharedInstance->batchProcessFrequency = batchProcessFreq;
+	sharedInstance->minIns = minIns;
+	sharedInstance->maxIns = maxIns;
+	sharedInstance->execDelay = execDelay;
+
 	for (size_t i = 1; i < sharedInstance->coresTotal + 1; i++)
 	{
 		//make a core
@@ -55,7 +70,7 @@ void CPUScheduler::startScheduler(std::string choice)
 		if (!this->isRunning)
 		{
 			this->isRunning = true;
-			std::thread newThread(&CPUScheduler::RRScheduler, this);
+			std::thread newThread(&CPUScheduler::RRScheduler, this, this->quantumCycles);
 			newThread.detach(); //One thread for the scheduler
 		}
 	}
@@ -99,9 +114,31 @@ void CPUScheduler::printFinishedProcesses()
 	}
 }
 
+void CPUScheduler::printCoreInfo() {
+	//check the stats of the cores
+	int activeCores = 0;
+	int availableCores = 0;
+	for (size_t i = 0; i < this->cpuCores.size(); i++) {
+		if (this->cpuCores[i]->isReady()) {
+			availableCores++;
+		}
+		else {
+			activeCores++;
+		}
+	}
+
+	//after checking
+	int util = (activeCores / (activeCores + availableCores)) * 100;
+
+	//printing
+	std::cout << "CPU Utilization: " << util << "\\%" << std::endl;
+	std::cout << "Cores used: " << activeCores << std::endl;
+	std::cout << "Cores available: " << availableCores << std::endl;
+}
+
 void CPUScheduler::FCFSScheduler()
 {
-	if (testing == true) {
+	/*if (testing == true) {
 		//create the weird processlist
 		for (size_t i = 1; i <= 10; i++)
 		{
@@ -112,7 +149,7 @@ void CPUScheduler::FCFSScheduler()
 			dummy->testInitFCFS();
 			addProcess(dummy);
 		}
-	}
+	}*/
 	while (this->isRunning)
 	{
 		for (size_t i = 0; i < cpuCores.size(); i++)
@@ -144,7 +181,6 @@ void CPUScheduler::RRScheduler(int quantumCycle)
 {
 	//this value gets reset every now and then to get the difference
 	auto begin = std::chrono::steady_clock::now();
-
 	//pop process out after quantum cycle passes
 	while (this->isRunning)
 	{
@@ -182,7 +218,7 @@ void CPUScheduler::RRScheduler(int quantumCycle)
 					this->cpuCores[i]->setReady(true);
 				}
 			}
-			if (!this->unfinishedQueue.empty() && this->cpuCores[i]->getProcess() == nullptr)
+			if (!this->unfinishedQueue.empty() && this->cpuCores[i]->getProcess() == nullptr && this->cpuCores[i]->isReady())
 			{
 				//get from the to be processed processes
 				this->cpuCores[i]->setProcess(this->unfinishedQueue.front());

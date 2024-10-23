@@ -28,6 +28,7 @@ private:
 	bool running;
 	bool ready;
 	bool stop;
+	int totalTicks = 0;
 
 	int simulationDelay = 100;
 	std::shared_ptr<Process> process = nullptr;

@@ -27,6 +27,7 @@ void Core::run()
 		std::lock_guard<std::mutex> lock(this->mtx); //files were going haywire without this
 		this->execute();
 		std::this_thread::sleep_for(std::chrono::milliseconds(simulationDelay)); //allows for some time difference
+		this->totalTicks++;
 	}
 	this->running = true;
 }

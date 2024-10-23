@@ -11,9 +11,14 @@ void Screen::printProcessInfo() const
 
 	std::cout << "Process ID: " << this->attachedProcess->getProcessID() << std::endl;
 
-	std::cout << "Current instruction line: " << this->attachedProcess->getCurrentInstructionLines() << std::endl;
+	if (this->attachedProcess->isDone()) {
+		std::cout << "Finished." << std::endl;
+	}
+	else {
+		std::cout << "Current instruction line: " << this->attachedProcess->getCurrentInstructionLines() << std::endl;
 
-	std::cout << "Total instruction lines: " << this->attachedProcess->getTotalInstructionLines() << std::endl;
+		std::cout << "Total instruction lines: " << this->attachedProcess->getTotalInstructionLines() << std::endl;
+	}
 }
 
 
