@@ -56,6 +56,17 @@ void CPUScheduler::destroy()
 	delete sharedInstance;
 }
 
+void CPUScheduler::setTest(bool test)
+{
+	std::lock_guard<std::mutex> lock(this->mtx);
+	this->testing = test;
+}
+
+bool CPUScheduler::getTest()
+{
+	return this->testing;
+}
+
 void CPUScheduler::startScheduler(std::string choice)
 {
 	if (choice == "fcfs")
@@ -94,15 +105,21 @@ void CPUScheduler::printRunningProcesses()
 	for (size_t i = 0; i < cpuCores.size(); i++)
 	{
 		//check each core for a running process
-		if (this->cpuCores[i]->getProcess() != nullptr)
+		if (this->cpuCores[i]->getProcess() != nullptr && this->cpuCores[i]->getProcess() != NULL)// && !this->cpuCores[i]->isReady()
 		{
 			//get the info needed from the process
-			std::cout << std::left << std::setw(11) << this->cpuCores[i]->getProcess()->getName() << " ";
-			std::cout << std::left << std::setw(23) << std::put_time(this->cpuCores[i]->getProcess()->getCreatedAt(), "(%d/%m/%Y %I:%M:%S%p) ") << "   ";
-			std::cout << std::left << std::setw(7) << this->cpuCores[i]->getProcess()->getCoreID() << "   ";
-			std::stringstream temp;
-			temp << this->cpuCores[i]->getProcess()->getCurrentInstructionLines() << " / " << this->cpuCores[i]->getProcess()->getTotalInstructionLines();
-			std::cout << std::left << std::setw(13) << temp.str() << std::endl;
+			auto tempprocess = this->cpuCores[i]->getProcess();
+			if (tempprocess == nullptr || tempprocess->getCoreID() == -1) {
+
+			}
+			else {
+				std::cout << std::left << std::setw(11) << tempprocess->getName() << " ";
+				std::cout << std::left << std::setw(23) << std::put_time(tempprocess->getCreatedAt(), "(%d/%m/%Y %I:%M:%S%p) ") << "   ";
+				std::cout << std::left << std::setw(7) << tempprocess->getCoreID() << "   ";
+				std::stringstream temp;
+				temp << tempprocess->getCurrentInstructionLines() << " / " << tempprocess->getTotalInstructionLines();
+				std::cout << std::left << std::setw(13) << temp.str() << std::endl;
+			}	
 		}
 
 	}
@@ -110,6 +127,7 @@ void CPUScheduler::printRunningProcesses()
 
 void CPUScheduler::printFinishedProcesses()
 {
+	
 	for (size_t i = 0; i < processList.size(); i++)
 	{
 		//check each core for a running process
@@ -128,8 +146,8 @@ void CPUScheduler::printFinishedProcesses()
 
 void CPUScheduler::printCoreInfo() {
 	//check the stats of the cores
-	int activeCores = 0;
-	int availableCores = 0;
+	double activeCores = 0;
+	double availableCores = 0;
 	for (size_t i = 0; i < this->cpuCores.size(); i++) {
 		if (this->cpuCores[i]->isReady()) {
 			availableCores++;
@@ -140,7 +158,8 @@ void CPUScheduler::printCoreInfo() {
 	}
 
 	//after checking
-	int util = (activeCores / (activeCores + availableCores)) * 100;
+	double util = (activeCores / (activeCores + availableCores));
+	util *= 100;
 
 	//printing
 	std::cout << "CPU Utilization: " << util << "\%" << std::endl;
@@ -165,9 +184,10 @@ void CPUScheduler::FCFSScheduler()
 					if (this->cpuCores[i]->getProcess()->isDone())
 					{
 						this->cpuCores[i]->setProcess(nullptr); //remove the process
+						this->cpuCores[i]->setReady(true);
 					}
 				}
-				if(!this->unfinishedQueue.empty() && this->cpuCores[i]->getProcess() == nullptr)
+				if(!this->unfinishedQueue.empty() && this->cpuCores[i]->getProcess() == nullptr && this->cpuCores[i]->isReady())
 				{
 					//get from the to be processed processes
 					this->cpuCores[i]->setProcess(this->unfinishedQueue.front());
@@ -177,9 +197,10 @@ void CPUScheduler::FCFSScheduler()
 			}
 		}
 		//end of cpu cycle
-		if (cycleCount % batchProcessFrequency == 0) {
+		if (cycleCount % batchProcessFrequency == 0 && this->testing == true) {
 			//std::cout << "New Process generated." << std::endl;
 			generateProcesses();
+			cycleCount++;
 		}
 		cycleCount++;
 	}
@@ -199,17 +220,23 @@ void CPUScheduler::RRScheduler(int quantumCycle)
 		auto cycleTimer = std::chrono::steady_clock::now(); //this is the active time of the too
 		auto currentCycle = std::chrono::duration_cast<std::chrono::seconds>(begin - cycleTimer).count(); //kind of like a tick counter
 		//Process removal section
-		if (currentCycle > quantumCycle) {
+		if (quantumCycle > currentCycle) {
+			//std::cout << "Clearing cores..." << std::endl;
+			//std::this_thread::sleep_for(std::chrono::milliseconds(100));
 			//it's `>` because it needs to remove the processes after the final tick passes
 			//e.g. if quantum is 4 then this will proc at 5
 			for (size_t i = 0; i < cpuCores.size(); i++)
 			{
-				if (this->cpuCores[i]->getProcess() != nullptr)
+				if (this->cpuCores[i]->getProcess() != nullptr && !this->cpuCores[i]->getProcess()->isDone() && !this->cpuCores[i]->isReady())
 				{
 					//get the process and put it into the queue
+					//std::cout << "Removing process: " << this->cpuCores[i]->getProcess()->getName() << " at Core: " << i <<  std::endl;
 					this->unfinishedQueue.push(cpuCores[i]->getProcess());
-					cpuCores[i]->setProcess(nullptr);
-					cpuCores[i]->setReady(true);
+					auto process = this->cpuCores[i]->getProcess();
+					this->cpuCores[i]->setProcess(nullptr);
+					process->setCoreID(-1);
+					this->cpuCores[i]->setReady(true);
+					//std::this_thread::sleep_for(std::chrono::milliseconds(100));
 				}
 			}
 			//reset the timer for next cycle
@@ -219,31 +246,40 @@ void CPUScheduler::RRScheduler(int quantumCycle)
 		//Process Assignment section
 		for (size_t i = 0; i < cpuCores.size(); i++)
 		{
+			//print the status of the Core abd the Queue
 			if (this->cpuCores[i]->getProcess() != nullptr)
 			{
 				//check if done
+				//std::cout << "Core " << i << " contains: " << this->cpuCores[i]->getProcess()->getName() << std::endl;
+				//std::cout << "Ready status: " << cpuCores[i]->isReady() << std::endl;
 				if (this->cpuCores[i]->getProcess()->isDone())
 				{
+					//remove from queue permanently
 					this->cpuCores[i]->setProcess(nullptr); //remove the process
 					this->cpuCores[i]->setReady(true);
 				}
 			}
 			if (!this->unfinishedQueue.empty() && this->cpuCores[i]->getProcess() == nullptr && this->cpuCores[i]->isReady())
 			{
-				//get from the to be processed processes
+				
+				//std::cout << "Assigning process: " << unfinishedQueue.front()->getName() << " to Core: " << i  << std::endl;
 				this->cpuCores[i]->setProcess(this->unfinishedQueue.front());
+				this->cpuCores[i]->setReady(false);
+				this->cpuCores[i]->getProcess()->setCoreID(i);
 				this->unfinishedQueue.pop();
 				this->isRunning = true;
+				//std::this_thread::sleep_for(std::chrono::milliseconds(100));
 			}
 		}
 
 		//end of cycle
-		if (cycleCount % batchProcessFrequency == 0) {
+		if (cycleCount % batchProcessFrequency == 0 && this->testing == true) {
 			//std::cout << "New Process generated." << std::endl;
 			generateProcesses();
 		}
 		//std::cout << cycleCount % batchProcessFrequency << std::endl;
 		cycleCount++;
+		
 
 	}
 }

@@ -95,6 +95,29 @@ void MainConsole::process()
 			std::cout << "--------------------------------------------------" << std::endl;//60
 
 		}
+		else if (command.substr(0, 14) == "scheduler-test")
+		{
+			if (CPUScheduler::getInstance()->getTest() == true) {
+				std::cout << "Scheduler is already generating processes." << std::endl;
+			}
+			else {
+				CPUScheduler::getInstance()->setTest(true);
+				std::cout << "Scheduler will now begin generating processes." << std::endl;
+			}
+
+		}
+		else if (command.substr(0, 14) == "scheduler-stop")
+		{
+			if (CPUScheduler::getInstance()->getTest() == true) {
+				CPUScheduler::getInstance()->setTest(false);
+				std::cout << "Scheduler will stop generating processes." << std::endl;
+			}
+			else {
+				
+				std::cout << "Scheduler is not generating processes at the moment." << std::endl;
+			}
+
+		}
 		else if (command.substr(0, 10) == "startFCFS") {
 			CPUScheduler::getInstance()->startScheduler("fcfs");
 			std::cout << std::endl << "FCFS scheduler has started." << std::endl;
@@ -165,6 +188,7 @@ void MainConsole::process()
 				);
 
 				this->initialized = true;
+				std::cout << "Initialization complete." << std::endl;
 			}
 
 		}

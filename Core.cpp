@@ -25,7 +25,7 @@ int Core::getID()
 void Core::run()
 {
 	while (!this->stop) {
-		std::lock_guard<std::mutex> lock(this->mtx); //files were going haywire without this
+		
 		this->execute();
 		std::this_thread::sleep_for(std::chrono::milliseconds(simulationDelay)); //allows for some time difference
 		this->totalTicks++;
@@ -36,7 +36,7 @@ void Core::run()
 void Core::execute()
 {
 	//this will be the function to be continually called
-	
+	std::lock_guard<std::mutex> lock(this->mtx); //files were going haywire without this
 	if (this->process != nullptr && !this->process->isDone())
 	{
 		this->process->setCoreID(this->coreID);
@@ -45,7 +45,6 @@ void Core::execute()
 		{
 			//deallocate the process
 			this->ready = true;
-			this->process = nullptr;
 			this->running = false;
 		}
 	}
@@ -58,21 +57,17 @@ bool Core::isReady()
 
 void Core::setReady(bool status)
 {
-	this->ready = false;
+	std::lock_guard<std::mutex> lock(this->mtx);
+	this->ready = status;
 }
 
 void Core::setProcess(std::shared_ptr<Process> process)
 {
+	std::lock_guard<std::mutex> lock(this->mtx);
+	this->process = process;
 	if (this->process == nullptr)
 	{
-		//ready
 		this->ready = true;
-		this->process = process;
-	}
-	else
-	{
-		//there's a process already
-		//maybe an overwrite function in the future
 	}
 }
 

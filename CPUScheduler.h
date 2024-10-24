@@ -15,6 +15,8 @@ public:
 	static void destroy();
 
 	void addProcess(std::shared_ptr<Process> process);
+	bool getTest();
+	void setTest(bool test);
 
 	void startScheduler(std::string choice);
 	void printRunningProcesses();
@@ -34,7 +36,7 @@ private:
 	void RRScheduler(int quantumCycle);
 	std::mutex mtx;
 
-	bool testing = true;
+	bool testing = false;
 	bool isRunning = false;
 	int coresTotal;
 	int cycleCount = 0;

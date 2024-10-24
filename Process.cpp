@@ -6,7 +6,7 @@
 
 Process::Process(int pid, std::string name) : pid(pid), processName(name)
 {
-	this->coreID = 0;
+	this->coreID = -1;
 	std::time_t now = std::time(nullptr);
 	createdAt = std::localtime(&now); //need this for scheduling
 	finishedAt = nullptr;
@@ -50,6 +50,7 @@ tm* Process::getFinishedAt()
 
 void Process::setFinishedAt(tm* finishedAt)
 {
+	std::lock_guard<std::mutex> lock(this->mtx);
 	this->finishedAt = finishedAt;
 }
 
@@ -88,13 +89,15 @@ bool Process::isDone()
 }
 
 void Process::setCoreID(int coreID)
+
 {
+	std::lock_guard<std::mutex> lock(this->mtx);
 	this->coreID = coreID;
 }
 
 void Process::execute()
 {
-	std::lock_guard<std::mutex> lock(this->mtx);
+	//std::lock_guard<std::mutex> lock(this->mtx);
 	//should probably make it so that there are different things this can do
 	//for now (09/10/24) it will be for printing to the outputfile
 	std::time_t now = std::time(nullptr);
