@@ -93,7 +93,8 @@ void CPUScheduler::generateProcesses() {
 	std::random_device rd;
 	std::mt19937 gen(rd());
 	std::uniform_int_distribution<> distr(this->minIns, this->maxIns);
-	std::shared_ptr<Process> dummy = std::make_shared<Process>(ConsoleManager::getInstance()->tableSize() - 2, "process_" + std::to_string(ConsoleManager::getInstance()->tableSize() - 2)); // -2 pffset cause of MAIN and MARQUEE
+	std::shared_ptr<Process> dummy = std::make_shared<Process>(ConsoleManager::getInstance()->tableSize() - 2,
+		"process_" + std::to_string(ConsoleManager::getInstance()->tableSize() - 2)); // -2 pffset cause of MAIN and MARQUEE
 	//set the amount of instructions based on the given range from the config
 	dummy->setInstruction(distr(gen));
 	addProcess(dummy);
@@ -237,6 +238,13 @@ void CPUScheduler::RRScheduler(int quantumCycle)
 					process->setCoreID(-1);
 					this->cpuCores[i]->setReady(true);
 					//std::this_thread::sleep_for(std::chrono::milliseconds(100));
+				}
+				else if (this->cpuCores[i]->getProcess() != nullptr && this->cpuCores[i]->getProcess()->isDone()) {
+					// do not add to unfinishedQueue
+					auto process = this->cpuCores[i]->getProcess();
+					this->cpuCores[i]->setProcess(nullptr);
+					process->setCoreID(-1);
+					this->cpuCores[i]->setReady(true);
 				}
 			}
 			//reset the timer for next cycle
