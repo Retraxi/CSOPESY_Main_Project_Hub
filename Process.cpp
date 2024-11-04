@@ -104,11 +104,24 @@ void Process::execute()
 
 	// Convert time to local time (tm struct)
 	std::tm* local_time = std::localtime(&now);
+	int dummy = 0;
 
 	// Print time in desired format: Weekday | Month | Day | HH:MM:SS | YYYY
 	if (!this->isDone())
 	{
+		
+		//expensive operation or delay
+		//std::this_thread::sleep_for(std::chrono::microseconds(10));
+
+		//or a long for loop
+		for (size_t i = 0; i < 10000; i++)
+		{
+			dummy += 1;
+		}
+		currentInstructionLine++;
+
 		//append or create file
+		/*
 		std::fstream output;
 
 		//check if file is new or old
@@ -138,5 +151,6 @@ void Process::execute()
 			currentInstructionLine++;
 			output.close();
 		}
+		*/
 	}
 }

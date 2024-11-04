@@ -30,7 +30,6 @@ Screen::Screen(std::shared_ptr<Process> process, String processName) : AConsole(
 
 void Screen::onEnabled()
 {
-	//put something here
 }
 
 void Screen::process()
@@ -66,5 +65,4 @@ void Screen::process()
 void Screen::display()
 {
 	    std::cout << "Screen " << this->name << " is now active." << std::endl;
-
 }

@@ -110,7 +110,7 @@ void CPUScheduler::printRunningProcesses()
 			//get the info needed from the process
 			auto tempprocess = this->cpuCores[i]->getProcess();
 			if (tempprocess == nullptr || tempprocess->getCoreID() == -1) {
-
+				std::cout << "FAILED RETREIVAL" << std::endl;
 			}
 			else {
 				std::cout << std::left << std::setw(11) << tempprocess->getName() << " ";
