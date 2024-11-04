@@ -23,6 +23,7 @@ public:
 	void printFinishedProcesses();
 	void printCoreInfo();
 	void generateProcesses();
+	void generateReport();
 	//void run();
 	//void execute();
 
@@ -34,6 +35,7 @@ private:
 
 	void FCFSScheduler();
 	void RRScheduler(int quantumCycle);
+	
 	std::mutex mtx;
 
 	bool testing = false;

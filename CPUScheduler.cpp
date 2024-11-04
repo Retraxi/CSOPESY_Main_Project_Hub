@@ -4,7 +4,7 @@
 #include <iomanip>
 #include <sstream>
 #include <random>
-
+#include <fstream>
 CPUScheduler* CPUScheduler::sharedInstance = nullptr;
 
 CPUScheduler* CPUScheduler::getInstance()
@@ -29,10 +29,10 @@ void CPUScheduler::addProcess(std::shared_ptr<Process> process)
 	this->unfinishedQueue.push(process);
 }
 
-void CPUScheduler::initialize(int cpuNum, std::string schedulerType, 
-							  unsigned int quantumCycles, unsigned int batchProcessFreq,
-							  unsigned int minIns, unsigned int maxIns,
-							  unsigned int execDelay)
+void CPUScheduler::initialize(int cpuNum, std::string schedulerType,
+	unsigned int quantumCycles, unsigned int batchProcessFreq,
+	unsigned int minIns, unsigned int maxIns,
+	unsigned int execDelay)
 {
 	//make the cpulist
 	sharedInstance = new CPUScheduler(); //like in ConsoleManager/
@@ -90,8 +90,8 @@ void CPUScheduler::startScheduler(std::string choice)
 }
 
 void CPUScheduler::generateProcesses() {
-	std::random_device rd; 
-	std::mt19937 gen(rd()); 
+	std::random_device rd;
+	std::mt19937 gen(rd());
 	std::uniform_int_distribution<> distr(this->minIns, this->maxIns);
 	std::shared_ptr<Process> dummy = std::make_shared<Process>(ConsoleManager::getInstance()->tableSize() - 2, "process_" + std::to_string(ConsoleManager::getInstance()->tableSize() - 2)); // -2 pffset cause of MAIN and MARQUEE
 	//set the amount of instructions based on the given range from the config
@@ -101,7 +101,7 @@ void CPUScheduler::generateProcesses() {
 
 void CPUScheduler::printRunningProcesses()
 {
-	
+
 	for (size_t i = 0; i < cpuCores.size(); i++)
 	{
 		//check each core for a running process
@@ -119,7 +119,7 @@ void CPUScheduler::printRunningProcesses()
 				std::stringstream temp;
 				temp << tempprocess->getCurrentInstructionLines() << " / " << tempprocess->getTotalInstructionLines();
 				std::cout << std::left << std::setw(13) << temp.str() << std::endl;
-			}	
+			}
 		}
 
 	}
@@ -127,7 +127,7 @@ void CPUScheduler::printRunningProcesses()
 
 void CPUScheduler::printFinishedProcesses()
 {
-	
+
 	for (size_t i = 0; i < processList.size(); i++)
 	{
 		//check each core for a running process
@@ -187,7 +187,7 @@ void CPUScheduler::FCFSScheduler()
 						this->cpuCores[i]->setReady(true);
 					}
 				}
-				if(!this->unfinishedQueue.empty() && this->cpuCores[i]->getProcess() == nullptr && this->cpuCores[i]->isReady())
+				if (!this->unfinishedQueue.empty() && this->cpuCores[i]->getProcess() == nullptr && this->cpuCores[i]->isReady())
 				{
 					//get from the to be processed processes
 					this->cpuCores[i]->setProcess(this->unfinishedQueue.front());
@@ -261,7 +261,7 @@ void CPUScheduler::RRScheduler(int quantumCycle)
 			}
 			if (!this->unfinishedQueue.empty() && this->cpuCores[i]->getProcess() == nullptr && this->cpuCores[i]->isReady())
 			{
-				
+
 				//std::cout << "Assigning process: " << unfinishedQueue.front()->getName() << " to Core: " << i  << std::endl;
 				this->cpuCores[i]->setProcess(this->unfinishedQueue.front());
 				this->cpuCores[i]->setReady(false);
@@ -279,7 +279,55 @@ void CPUScheduler::RRScheduler(int quantumCycle)
 		}
 		//std::cout << cycleCount % batchProcessFrequency << std::endl;
 		cycleCount++;
-		
+
 
 	}
+}
+
+
+
+
+void CPUScheduler::generateReport() {
+	std::ofstream reportFile("csopesy-log.txt");
+	if (!reportFile.is_open()) {
+		std::cerr << "Error: Unable to create report file." << std::endl;
+		return;
+	}
+
+	reportFile << "CPU Utilization Report\n";
+	reportFile << "----------------------\n";
+
+	double activeCores = 0;
+	double availableCores = 0;
+	for (const auto& core : cpuCores) {
+		if (core->isReady()) {
+			availableCores++;
+		}
+		else {
+			activeCores++;
+		}
+	}
+	double utilization = (activeCores / (activeCores + availableCores)) * 100;
+	reportFile << "CPU Utilization: " << utilization << "%\n";
+	reportFile << "Cores used: " << activeCores << "\n";
+	reportFile << "Cores available: " << availableCores << "\n\n";
+
+	reportFile << "Running Processes:\n";
+	for (const auto& core : cpuCores) {
+		auto process = core->getProcess();
+		if (process != nullptr) {
+			reportFile << "Process: " << process->getName() << ", Core ID: " << process->getCoreID() << "\n";
+		}
+	}
+
+	reportFile << "\nFinished Processes:\n";
+	for (const auto& process : processList) {
+		if (process->isDone()) {
+			reportFile << "Process: " << process->getName() << ", Finished at: "
+				<< std::put_time(process->getFinishedAt(), "(%d/%m/%Y %I:%M:%S%p)") << "\n";
+		}
+	}
+
+	reportFile.close();
+	std::cout << "CPU utilization report saved to csopesy-log.txt." << std::endl;
 }

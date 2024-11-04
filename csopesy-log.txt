@@ -1,0 +1,9 @@
+CPU Utilization Report
+----------------------
+CPU Utilization: 0%
+Cores used: 0
+Cores available: 4
+
+Running Processes:
+
+Finished Processes:

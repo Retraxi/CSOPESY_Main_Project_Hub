@@ -113,7 +113,7 @@ void MainConsole::process()
 				std::cout << "Scheduler will stop generating processes." << std::endl;
 			}
 			else {
-				
+
 				std::cout << "Scheduler is not generating processes at the moment." << std::endl;
 			}
 
@@ -121,6 +121,9 @@ void MainConsole::process()
 		else if (command.substr(0, 10) == "startFCFS") {
 			CPUScheduler::getInstance()->startScheduler("fcfs");
 			std::cout << std::endl << "FCFS scheduler has started." << std::endl;
+		}
+		else if (command == "report-util") {
+			CPUScheduler::getInstance()->generateReport();
 		}
 		else if (command == "exit")
 		{
@@ -153,7 +156,7 @@ void MainConsole::process()
 				std::string value;
 				while (getline(reader, line)) {
 					std::istringstream lineReader(line);
-					lineReader >> key >> value; 
+					lineReader >> key >> value;
 					if (value == "0") {
 						value = "0";
 					}
@@ -165,7 +168,7 @@ void MainConsole::process()
 				//std::cout << configTable["num-cpu"] << std::endl;
 				//initialize the CPU Scheduler using the read data
 				//it didn't work when I put it directly so I'm assigning it to some values
-				int cpuNum= stoi(configTable["num-cpu"]);
+				int cpuNum = stoi(configTable["num-cpu"]);
 				unsigned int qCycle = stoul(configTable["quantum-cycles"]);
 				unsigned int bpFreq = stoul(configTable["batch-process-freq"]);
 				unsigned int miIns = stoul(configTable["min-ins"]);
@@ -179,7 +182,7 @@ void MainConsole::process()
 				else {
 					unsigned int dpEx = stoul(configTable["delays-per-exec"]);
 				}
-				
+
 				CPUScheduler::initialize(
 					cpuNum, configTable["scheduler"].substr(1, configTable["scheduler"].size() - 1),
 					qCycle, bpFreq,
