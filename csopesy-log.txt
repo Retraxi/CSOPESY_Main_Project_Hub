@@ -1,11 +1,10 @@
 CPU Utilization Report
-----------------------
-CPU Utilization: 25%
-Cores used: 1
-Cores available: 3
+--------------------------------------------------
+CPU Utilization: 0%
+Cores used: 0
+Cores available: 4
+--------------------------------------------------
+Running processes:
 
-Running Processes:
-Process: process_2, Core ID: 1
-Process: process_1, Core ID: 2
-
-Finished Processes:
+Finished processes:
+--------------------------------------------------
