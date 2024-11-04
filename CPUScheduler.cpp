@@ -295,8 +295,9 @@ void CPUScheduler::generateReport() {
 	}
 
 	reportFile << "CPU Utilization Report\n";
-	reportFile << "----------------------\n";
+	reportFile << "--------------------------------------------------\n";
 
+	// Print core info
 	double activeCores = 0;
 	double availableCores = 0;
 	for (const auto& core : cpuCores) {
@@ -310,23 +311,32 @@ void CPUScheduler::generateReport() {
 	double utilization = (activeCores / (activeCores + availableCores)) * 100;
 	reportFile << "CPU Utilization: " << utilization << "%\n";
 	reportFile << "Cores used: " << activeCores << "\n";
-	reportFile << "Cores available: " << availableCores << "\n\n";
+	reportFile << "Cores available: " << availableCores << "\n";
+	reportFile << "--------------------------------------------------\n";
 
-	reportFile << "Running Processes:\n";
+	// Print running processes
+	reportFile << "Running processes:\n";
 	for (const auto& core : cpuCores) {
 		auto process = core->getProcess();
 		if (process != nullptr) {
-			reportFile << "Process: " << process->getName() << ", Core ID: " << process->getCoreID() << "\n";
+			reportFile << "Process: " << process->getName()
+				<< ", Core ID: " << process->getCoreID()
+				<< ", Instruction Line: " << process->getCurrentInstructionLines()
+				<< " / " << process->getTotalInstructionLines() << "\n";
 		}
 	}
 
-	reportFile << "\nFinished Processes:\n";
+	// Print finished processes
+	reportFile << "\nFinished processes:\n";
 	for (const auto& process : processList) {
 		if (process->isDone()) {
-			reportFile << "Process: " << process->getName() << ", Finished at: "
-				<< std::put_time(process->getFinishedAt(), "(%d/%m/%Y %I:%M:%S%p)") << "\n";
+			reportFile << "Process: " << process->getName()
+				<< ", Finished at: " << std::put_time(process->getFinishedAt(), "(%d/%m/%Y %I:%M:%S%p)")
+				<< ", Instruction Line: " << process->getTotalInstructionLines() << " / " << process->getTotalInstructionLines() << "\n";
 		}
 	}
+
+	reportFile << "--------------------------------------------------\n";
 
 	reportFile.close();
 	std::cout << "CPU utilization report saved to csopesy-log.txt." << std::endl;
