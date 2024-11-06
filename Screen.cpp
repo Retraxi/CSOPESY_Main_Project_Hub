@@ -11,9 +11,14 @@ void Screen::printProcessInfo() const
 
 	std::cout << "Process ID: " << this->attachedProcess->getProcessID() << std::endl;
 
-	std::cout << "Current instruction line: " << this->attachedProcess->getCurrentInstructionLines() << std::endl;
+	if (this->attachedProcess->isDone()) {
+		std::cout << "Finished." << std::endl;
+	}
+	else {
+		std::cout << "Current instruction line: " << this->attachedProcess->getCurrentInstructionLines() << std::endl;
 
-	std::cout << "Total instruction lines: " << this->attachedProcess->getTotalInstructionLines() << std::endl;
+		std::cout << "Total instruction lines: " << this->attachedProcess->getTotalInstructionLines() << std::endl;
+	}
 }
 
 
@@ -25,7 +30,6 @@ Screen::Screen(std::shared_ptr<Process> process, String processName) : AConsole(
 
 void Screen::onEnabled()
 {
-	//put something here
 }
 
 void Screen::process()
@@ -61,5 +65,4 @@ void Screen::process()
 void Screen::display()
 {
 	    std::cout << "Screen " << this->name << " is now active." << std::endl;
-
 }

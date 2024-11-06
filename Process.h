@@ -35,6 +35,7 @@ public:
 
 
 	void setCoreID(int coreID);
+	void setInstruction(int totalCount);
 	void testInitFCFS();
 
 	void execute();

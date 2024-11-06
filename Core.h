@@ -7,14 +7,16 @@ class Core
 {
 public:
 	//declarations
-	Core(int coreID);
+	Core(int coreID, int execDelay);
 	~Core() = default;
 	int coreID;
 
 	void setProcess(std::shared_ptr<Process> process); 
 	std::shared_ptr<Process> getProcess();
 	bool isRunning();
+	
 	bool isReady();
+	void setReady(bool status);
 
 	int getID();
 	void shutdown();
@@ -26,7 +28,8 @@ private:
 	bool running;
 	bool ready;
 	bool stop;
+	int totalTicks = 0;
 
-	int simulationDelay = 100;
+	int simulationDelay;
 	std::shared_ptr<Process> process = nullptr;
 };

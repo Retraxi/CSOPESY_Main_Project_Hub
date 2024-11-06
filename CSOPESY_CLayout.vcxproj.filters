@@ -68,5 +68,11 @@
     <ClInclude Include="CPUScheduler.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="IETThread.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ICommand.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
