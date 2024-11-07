@@ -135,6 +135,7 @@
     <ClCompile Include="CSOPESY_CLayout.cpp" />
     <ClCompile Include="MainConsole.cpp" />
     <ClCompile Include="MarqueeConsole.cpp" />
+    <ClCompile Include="MemoryManager.cpp" />
     <ClCompile Include="Process.cpp" />
     <ClCompile Include="Screen.cpp" />
   </ItemGroup>
@@ -147,8 +148,12 @@
     <ClInclude Include="IETThread.h" />
     <ClInclude Include="MainConsole.h" />
     <ClInclude Include="MarqueeConsole.h" />
+    <ClInclude Include="MemoryManager.h" />
     <ClInclude Include="Process.h" />
     <ClInclude Include="Screen.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="WEEK8HW.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

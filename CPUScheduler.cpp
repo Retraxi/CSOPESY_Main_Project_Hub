@@ -5,7 +5,10 @@
 #include <sstream>
 #include <random>
 #include <fstream>
+#include "MemoryManager.h"
 CPUScheduler* CPUScheduler::sharedInstance = nullptr;
+// Initialize MemoryManager with 16,384 bytes of memory and 4,096 bytes per process
+MemoryManager memoryManager(16384, 4096);
 
 CPUScheduler* CPUScheduler::getInstance()
 {
@@ -269,14 +272,34 @@ void CPUScheduler::RRScheduler(int quantumCycle)
 			}
 			if (!this->unfinishedQueue.empty() && this->cpuCores[i]->getProcess() == nullptr && this->cpuCores[i]->isReady())
 			{
+				auto nextProcess = this->unfinishedQueue.front();
+				this->unfinishedQueue.pop();
 
-				//std::cout << "Assigning process: " << unfinishedQueue.front()->getName() << " to Core: " << i  << std::endl;
-				this->cpuCores[i]->setProcess(this->unfinishedQueue.front());
+				// Attempt to allocate memory for the process
+				// New code added to handle memory allocation
+				if (!memoryManager.allocateMemory(nextProcess->getName())) {
+					// If allocation fails, requeue the process
+					this->unfinishedQueue.push(nextProcess);
+					continue; // Skip this cycle if allocation fails
+				}
+
+				// Assign the process to the core if memory allocation is successful
+				this->cpuCores[i]->setProcess(nextProcess);
 				this->cpuCores[i]->setReady(false);
 				this->cpuCores[i]->getProcess()->setCoreID(i);
-				this->unfinishedQueue.pop();
 				this->isRunning = true;
 				//std::this_thread::sleep_for(std::chrono::milliseconds(100));
+			}
+		}
+
+		// Deallocate memory upon process completion
+		// New code added to handle memory deallocation
+		for (size_t i = 0; i < cpuCores.size(); i++) {
+			if (cpuCores[i]->getProcess() != nullptr && cpuCores[i]->getProcess()->isDone()) {
+				// Free memory for completed process
+				memoryManager.deallocateMemory(cpuCores[i]->getProcess()->getName());
+				cpuCores[i]->setProcess(nullptr);
+				cpuCores[i]->setReady(true);
 			}
 		}
 
@@ -288,9 +311,14 @@ void CPUScheduler::RRScheduler(int quantumCycle)
 		//std::cout << cycleCount % batchProcessFrequency << std::endl;
 		cycleCount++;
 
-
+		// Save memory snapshot every 4 quantum-cycles
+		// New code added to handle periodic memory snapshot
+		if (cycleCount % 4 == 0) {
+			memoryManager.saveMemorySnapshot(quantumCycle);
+		}
 	}
 }
+
 
 
 
