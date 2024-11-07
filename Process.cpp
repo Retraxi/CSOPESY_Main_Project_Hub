@@ -109,7 +109,7 @@ void Process::execute()
 	// Print time in desired format: Weekday | Month | Day | HH:MM:SS | YYYY
 	if (!this->isDone())
 	{
-		
+
 		//expensive operation or delay
 		//std::this_thread::sleep_for(std::chrono::microseconds(10));
 
@@ -135,7 +135,7 @@ void Process::execute()
 				<< "Core:" << this->coreID
 				<< " " << instructionList.at(currentInstructionLine) << std::endl;
 			currentInstructionLine++;
-			
+
 		}
 		else
 		{
