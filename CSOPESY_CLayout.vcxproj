@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -133,6 +133,7 @@
     <ClCompile Include="Core.cpp" />
     <ClCompile Include="CPUScheduler.cpp" />
     <ClCompile Include="CSOPESY_CLayout.cpp" />
+    <ClCompile Include="IMemoryAllocator.cpp" />
     <ClCompile Include="MainConsole.cpp" />
     <ClCompile Include="MarqueeConsole.cpp" />
     <ClCompile Include="Process.cpp" />
@@ -143,12 +144,17 @@
     <ClInclude Include="ConsoleManager.h" />
     <ClInclude Include="Core.h" />
     <ClInclude Include="CPUScheduler.h" />
+    <ClInclude Include="FlatMemoryAllocator.h" />
     <ClInclude Include="ICommand.h" />
     <ClInclude Include="IETThread.h" />
+    <ClInclude Include="IMemoryAllocator.h" />
     <ClInclude Include="MainConsole.h" />
     <ClInclude Include="MarqueeConsole.h" />
     <ClInclude Include="Process.h" />
     <ClInclude Include="Screen.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="FlatMemoryAllocator.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
