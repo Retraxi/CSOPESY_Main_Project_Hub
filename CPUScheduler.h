@@ -24,8 +24,9 @@ public:
 	void printCoreInfo();
 	void generateProcesses();
 	void generateReport();
-	//void run();
-	//void execute();
+    void reportUtilization();
+    // void run();
+    // void execute();
 
 private:
 

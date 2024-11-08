@@ -52,10 +52,29 @@ public:
      */
     void saveMemorySnapshot(int quantumCycle) const;
 
+
+
+    // Method to get memory utilization percentage
+    double getMemoryUtilization() const;
+
+    // Method to get external fragmentation in bytes
+    double getExternalFragmentation() const;
+
+    // Method to get the total memory size
+    double getTotalMemory() const;
+
+    // Method to get the free memory size
+    double getFreeMemory() const;
+
 private:
     int maxMemory;          // Total memory available in the system
     int processMemory;      // Fixed memory required per process
     std::vector<MemoryBlock> memory; // Vector representing memory blocks
+    double totalMemory;  // Total memory size
+    double freeMemory;   // Free memory available
+    double minBlockSizeForAllocation;
+    std::vector<double> freeBlocks;  // Vector storing sizes of free memory blocks
+
 
     /**
      * Merges adjacent free blocks to reduce fragmentation.

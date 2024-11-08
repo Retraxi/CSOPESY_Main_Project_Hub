@@ -111,3 +111,29 @@ void MemoryManager::mergeFreeBlocks() {
         }
     }
 }
+
+
+double MemoryManager::getMemoryUtilization() const {
+    // Calculate memory utilization as a percentage of memory in use
+    return ((totalMemory - freeMemory) / totalMemory) * 100;
+}
+
+
+double MemoryManager::getExternalFragmentation() const {
+    // Calculate external fragmentation: sum of free blocks that cannot be used
+    double fragmentedMemory = 0.0;
+    for (double block : freeBlocks) {
+        if (block < minBlockSizeForAllocation) {  // Define a minimum block size that is useful
+            fragmentedMemory += block;
+        }
+    }
+    return fragmentedMemory;
+}
+
+double MemoryManager::getTotalMemory() const {
+    return totalMemory;
+}
+
+double MemoryManager::getFreeMemory() const {
+    return freeMemory;
+}

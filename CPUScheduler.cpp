@@ -377,3 +377,17 @@ void CPUScheduler::generateReport() {
 	reportFile.close();
 	std::cout << "CPU utilization report saved to csopesy-log.txt." << std::endl;
 }
+
+
+void CPUScheduler::reportUtilization() {
+    printCoreInfo();
+
+    // Report Memory Utilization and Fragmentation
+    double memoryUtilization = memoryManager.getMemoryUtilization();
+    double externalFragmentation = memoryManager.getExternalFragmentation();
+
+    std::cout << "Memory Utilization: " << memoryUtilization << "%" << std::endl;
+    std::cout << "External Fragmentation: " << externalFragmentation << " bytes" << std::endl;
+
+  
+}

@@ -1,0 +1,39 @@
+CPUScheduler::reportUtilization() in CPUScheduler.cpp:
+A method reportUtilization() was added to the CPUScheduler class to report both CPU and memory utilization. The method performs the following steps:
+
+Report CPU Utilization: Calls printCoreInfo(), which is assumed to provide information on the usage of each CPU core.
+
+Report Memory Utilization: Utilizes the MemoryManager class to calculate and report memory usage:
+
+Calls getMemoryUtilization() to return the percentage of memory currently in use.
+Calls getExternalFragmentation() to provide the amount of external fragmentation, which represents free memory broken into small, unusable blocks.
+
+
+
+MemoryManager class in MemoryManager.h:
+Several methods were added to the MemoryManager class to calculate and retrieve memory statistics:
+
+getMemoryUtilization(): Returns the percentage of memory in use.
+
+getExternalFragmentation(): Calculates external fragmentation, referring to memory that cannot be used effectively due to being split into small chunks.
+
+getTotalMemory(): Returns the total size of available memory.
+
+getFreeMemory(): Returns the amount of free memory available for allocation.
+
+The purpose of these methods is to provide essential functionality for monitoring the health and efficiency of memory usage within the system.
+
+
+MemoryManager Method Implementations in MemoryManager.cpp:
+The new methods were implemented in the MemoryManager.cpp file to calculate memory utilization and fragmentation:
+
+getMemoryUtilization(): This method calculates the percentage of memory in use by subtracting free memory from total memory and dividing the result by the total memory.
+
+getExternalFragmentation(): This method calculates external fragmentation by inspecting each free memory block. If a block is too small to be allocated (based on a predefined minimum block size), it is considered fragmented and its size is added to the total fragmented memory.
+
+getTotalMemory() and getFreeMemory(): These methods return the total memory size and the amount of free memory available, respectively.
+
+These implementations are necessary to provide the actual logic behind the memory statistics. The memory utilization percentage helps track memory usage, while the external fragmentation calculation helps identify small, unusable blocks of memory that can reduce the efficiency of memory allocation.
+
+
+NOTE STILL NOT CORRECT FORMAT OR MIGHT NOT WORK BUT SOMEONE CAN USE THIS TO TEST IT AND IMPROVE FURTHER
