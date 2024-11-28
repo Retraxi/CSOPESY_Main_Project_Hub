@@ -41,13 +41,20 @@ public:
 	void execute();
 	bool isDone();
 
+	// Method to save the process state to the backing store
+    void saveToBackingStore();
+
+    // Method to load the process state from the backing store
+    bool loadFromBackingStore();
+
+
+
 private:
 	std::mutex mtx;
 
 	int coreID;
 	int currentInstructionLine;
-
-	std::tm* createdAt;
+    std::tm* createdAt;
 	std::tm* finishedAt;
 	std::string processName;
 	std::vector<std::string> instructionList; 

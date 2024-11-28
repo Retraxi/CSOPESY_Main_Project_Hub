@@ -2,8 +2,9 @@
 #include "Process.h"
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <iomanip>
-
+#include <ctime>
 Process::Process(int pid, std::string name) : pid(pid), processName(name)
 {
 	this->coreID = -1;
@@ -94,6 +95,64 @@ void Process::setCoreID(int coreID)
 	std::lock_guard<std::mutex> lock(this->mtx);
 	this->coreID = coreID;
 }
+
+
+bool Process::loadFromBackingStore() {
+    std::ifstream file("./BackingStore/process_" + std::to_string(pid) + ".txt");
+
+    if (file.is_open()) {
+        std::string line;
+        while (std::getline(file, line)) {
+            if (line.find("Process ID:") != std::string::npos) {
+                pid = std::stoi(line.substr(line.find(":") + 2));
+            } else if (line.find("Process Name:") != std::string::npos) {
+                processName = line.substr(line.find(":") + 2);
+            } else if (line.find("Current Instruction Line:") != std::string::npos) {
+                currentInstructionLine = std::stoi(line.substr(line.find(":") + 2));
+            } else if (line.find("Core ID:") != std::string::npos) {
+                coreID = std::stoi(line.substr(line.find(":") + 2));
+            } else if (line.find("Created At:") != std::string::npos) {
+                std::string createdAtStr = line.substr(line.find(":") + 2);
+
+                // Convert the string to a std::tm object
+                std::tm tm = {};
+                std::istringstream ss(createdAtStr);
+                ss >> std::get_time(&tm, "%Y-%m-%d %H:%M:%S");  // Assuming the date format is "2024-11-28 15:30:00"
+
+                if (ss.fail()) {
+                    std::cerr << "Failed to parse time string: " << createdAtStr << std::endl;
+                } else {
+                    // Convert std::tm to time_t
+                    std::time_t createdAtTime = std::mktime(&tm);
+                    createdAt = std::localtime(&createdAtTime);
+                }
+            } else if (line.find("Finished At:") != std::string::npos) {
+                std::string finishedAtStr = line.substr(line.find(":") + 2);
+
+                // Convert the string to a std::tm object
+                std::tm tm = {};
+                std::istringstream ss(finishedAtStr);
+                ss >> std::get_time(&tm, "%Y-%m-%d %H:%M:%S");  // Assuming the date format is "2024-11-28 15:30:00"
+
+                if (ss.fail()) {
+                    std::cerr << "Failed to parse time string: " << finishedAtStr << std::endl;
+                } else {
+                    // Convert std::tm to time_t
+                    std::time_t finishedAtTime = std::mktime(&tm);
+                    finishedAt = std::localtime(&finishedAtTime);
+                }
+            }
+        }
+
+        file.close();
+        std::cout << "Process " << pid << " loaded from backing store." << std::endl;
+        return true;
+    } else {
+        std::cerr << "Error: Unable to open file for process " << pid << std::endl;
+        return false;
+    }
+}
+
 
 void Process::execute()
 {
