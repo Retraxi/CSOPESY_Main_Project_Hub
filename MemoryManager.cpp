@@ -3,6 +3,7 @@
 #include <iomanip>
 #include <ctime>
 #include <iostream>
+#include <algorithm> // For std::find_if
 
 /**
  * Initializes the MemoryManager with the maximum memory and process memory size.
@@ -52,13 +53,17 @@ bool MemoryManager::allocateMemory(const std::string& processName) {
             int allocatedEnd = block.startAddress + processMemory - 1;
 
             // Update the block to reflect the allocated range
+            int originalEnd = block.endAddress;
             block.endAddress = allocatedEnd;
             block.isOccupied = true;
             block.processName = processName;
 
             // Add a new free block for any remaining memory
-            if (allocatedEnd + 1 <= block.endAddress) {
-                memory.push_back({ allocatedEnd + 1, block.endAddress, false, "" });
+            if (allocatedEnd + 1 <= originalEnd) {
+                auto it = std::find(memory.begin(), memory.end(), block);
+                if (it != memory.end()) {
+                    memory.insert(it + 1, { allocatedEnd + 1, originalEnd, false, "" });
+                }
             }
 
             freeMemory -= processMemory;
@@ -85,6 +90,7 @@ void MemoryManager::deallocateMemory(const std::string& processName) {
                 block.processName = "";
                 freeMemory += (block.endAddress - block.startAddress + 1);
                 std::cout << "MemoryManager: Deallocated memory for process " << processName << " in Flat mode.\n";
+                break;
             }
         }
         mergeFreeBlocks();
@@ -92,30 +98,18 @@ void MemoryManager::deallocateMemory(const std::string& processName) {
 }
 
 /**
- * Switches to flat memory allocation mode.
+ * Merges adjacent free blocks in flat mode.
  */
-void MemoryManager::switchToFlat() {
-    if (isPaging) {
-        std::cout << "MemoryManager: Switching to Flat Memory Allocation mode.\n";
-        isPaging = false;
-
-        // Reset flat memory blocks
-        memory.clear();
-        memory.push_back({ 0, maxMemory - 1, false, "" }); // Reset to a single free block
-        freeMemory = maxMemory; // Reset free memory
-    }
-}
-
-/**
- * Switches to paging memory allocation mode.
- */
-void MemoryManager::switchToPaging() {
-    if (!isPaging) {
-        std::cout << "MemoryManager: Switching to Paging Memory Allocation mode.\n";
-        isPaging = true;
-
-        // Reset PagingAllocator
-        pagingAllocator = PagingAllocator(maxMemory);
+void MemoryManager::mergeFreeBlocks() {
+    for (auto it = memory.begin(); it != memory.end();) {
+        auto next = std::next(it);
+        if (next != memory.end() && !it->isOccupied && !next->isOccupied) {
+            it->endAddress = next->endAddress; // Merge blocks
+            memory.erase(next);
+        }
+        else {
+            ++it;
+        }
     }
 }
 
@@ -134,23 +128,6 @@ void MemoryManager::visualizeMemory() const {
             std::cout << (block.isOccupied ? block.processName : "Free") << "\n";
         }
     }
-}
-
-/**
- * Calculates external fragmentation in flat mode.
- */
-int MemoryManager::calculateExternalFragmentation() const {
-    if (isPaging) {
-        return 0; // No external fragmentation in paging mode
-    }
-
-    int fragmentation = 0;
-    for (const auto& block : memory) {
-        if (!block.isOccupied) {
-            fragmentation += (block.endAddress - block.startAddress + 1);
-        }
-    }
-    return fragmentation;
 }
 
 /**
@@ -174,47 +151,197 @@ void MemoryManager::saveMemorySnapshot(int quantumCycle) const {
             file << (block.isOccupied ? block.processName : "Free") << "\n";
         }
     }
-
     file.close();
 }
 
 /**
- * Merges adjacent free blocks in flat mode.
+ * Evicts the oldest process from flat memory allocation.
  */
-void MemoryManager::mergeFreeBlocks() {
-    for (auto it = memory.begin(); it != memory.end() - 1; ++it) {
-        if (!it->isOccupied && !(it + 1)->isOccupied) {
-            it->endAddress = (it + 1)->endAddress;
-            memory.erase(it + 1);
-            --it;
-        }
+void MemoryManager::evictOldestProcess() {
+    auto it = std::find_if(memory.begin(), memory.end(), [](const MemoryBlock& block) {
+        return block.isOccupied;
+        });
+
+    if (it != memory.end()) {
+        std::cout << "Evicting process " << it->processName << " from flat memory.\n";
+
+        // Create a Process from the MemoryBlock being evicted
+        Process evictedProcess(1, it->processName, (it->endAddress - it->startAddress + 1));
+
+        // Move to flatBackingStore (using the process name as the key)
+        flatBackingStore.push_back(MemoryBlock{ it->startAddress, it->endAddress, false, it->processName });
+
+        it->isOccupied = false;
+        it->processName = "";
+        freeMemory += (it->endAddress - it->startAddress + 1);
+
+        mergeFreeBlocks();
+        evictionQueue.push(evictedProcess.getName());
+    }
+    else {
+        std::cerr << "Error: No occupied process found to evict.\n";
     }
 }
 
+
 /**
- * Gets memory utilization as a percentage.
+ * Restores a process from the backing store.
+ */
+bool MemoryManager::restoreProcessFromBackingStore(const std::string& processName) {
+    if (!isPaging) { // If in flat memory mode
+        // Iterate through the flatBackingStore to find the process
+        for (auto it = flatBackingStore.begin(); it != flatBackingStore.end(); ++it) {
+            if (it->processName == processName) { // Check if the process name matches
+                // Create a process from the MemoryBlock (no copying)
+                Process process(1, it->processName, (it->endAddress - it->startAddress + 1));
+                bool allocated = allocateMemory(process.getName(), process.getMemorySize());
+
+                if (allocated) {
+                    std::cout << "Restored process " << processName << " from flat backing store to memory.\n";
+                    flatBackingStore.erase(it); // Remove from flatBackingStore
+                    return true;
+                }
+                else {
+                    std::cerr << "Failed to restore process " << processName << ". Attempting eviction.\n";
+                    evictOldestProcess();
+                    return restoreProcessFromBackingStore(processName);
+                }
+            }
+        }
+    }
+    else { // If in paging memory mode
+        // Access the pageBackingStore (map) for paging memory mode
+        auto it = pageBackingStore.find(processName);
+        if (it != pageBackingStore.end()) {
+            // Access the process by reference (no copy)
+            Process& process = it->second; // Use reference here
+            bool allocated = allocateMemory(process.getName(), process.getMemorySize());
+
+            if (allocated) {
+                std::cout << "Restored process " << processName << " from paging backing store to memory.\n";
+                pageBackingStore.erase(it); // Remove from pageBackingStore
+                return true;
+            }
+            else {
+                std::cerr << "Failed to restore process " << processName << ". Attempting eviction.\n";
+                evictOldestProcess();
+                return restoreProcessFromBackingStore(processName);
+            }
+        }
+    }
+
+    // If the process wasn't found in either backing store
+    std::cerr << "Error: Process " << processName << " not found in backing store.\n";
+    return false;
+}
+
+
+
+
+/**
+ * Evicts the oldest page from paging memory allocation.
+ * Moves the evicted page to the backing store for future restoration if needed.
+ */
+ /**
+  * Evicts the oldest page from paging memory allocation.
+  * Moves the evicted page to the backing store for future restoration if needed.
+  */
+void MemoryManager::evictOldestPage() {
+    // Check if there are any pages to evict
+    if (evictionQueue.empty()) {
+        std::cerr << "Error: No pages to evict in paging mode.\n";
+        return;
+    }
+
+    // Get the name of the oldest process/page to evict
+    std::string oldestProcessName = evictionQueue.front();
+    evictionQueue.pop();
+
+    // Check if the process exists in the pageBackingStore
+    auto it = pageBackingStore.find(oldestProcessName);
+    if (it == pageBackingStore.end()) {
+        std::cerr << "Error: Process " << oldestProcessName << " not found in page backing store.\n";
+        return;
+    }
+
+    // Retrieve the process object from the backing store by reference
+    Process& process = it->second;
+
+    // Deallocate its memory using the PagingAllocator
+    pagingAllocator.deallocate(&process);
+
+    // After eviction, the process is already in the backing store, so no need to reinsert it
+    // This step might be redundant because we didn't modify the `process`
+    // pageBackingStore[oldestProcessName] = process; // This line is actually unnecessary
+
+    std::cout << "Evicted oldest page for process " << oldestProcessName
+        << " and saved it to the page backing store.\n";
+}
+
+/**
+ * Calculates external fragmentation in flat mode.
+ */
+int MemoryManager::calculateExternalFragmentation() const {
+    if (isPaging) {
+        return 0; // No external fragmentation in paging mode
+    }
+
+    int fragmentation = 0;
+    for (const auto& block : memory) {
+        if (!block.isOccupied) {
+            fragmentation += (block.endAddress - block.startAddress + 1);
+        }
+    }
+    return fragmentation;
+}
+
+/**
+ * Gets memory utilization.
  */
 double MemoryManager::getMemoryUtilization() const {
     return ((totalMemory - freeMemory) / totalMemory) * 100.0;
 }
 
-/**
- * Gets external fragmentation in bytes.
- */
-double MemoryManager::getExternalFragmentation() const {
-    return calculateExternalFragmentation();
+void MemoryManager::switchToFlat() {
+    if (isPaging) {
+        std::cout << "MemoryManager: Switching to Flat Memory Allocation mode.\n";
+        isPaging = false;
+
+        // Reset flat memory blocks
+        memory.clear();
+        memory.push_back({ 0, maxMemory - 1, false, "" }); // Reset to a single free block
+        freeMemory = maxMemory; // Reset free memory
+    }
 }
 
-/**
- * Gets the total memory size.
- */
+void MemoryManager::switchToPaging() {
+    if (!isPaging) {
+        std::cout << "MemoryManager: Switching to Paging Memory Allocation mode.\n";
+        isPaging = true;
+
+        // Reset PagingAllocator
+        pagingAllocator = PagingAllocator(maxMemory);
+    }
+}
+
+double MemoryManager::getExternalFragmentation() const {
+    if (isPaging) {
+        return 0; // No external fragmentation in paging mode
+    }
+
+    int fragmentation = 0;
+    for (const auto& block : memory) {
+        if (!block.isOccupied) {
+            fragmentation += (block.endAddress - block.startAddress + 1);
+        }
+    }
+    return fragmentation;
+}
+
 double MemoryManager::getTotalMemory() const {
     return totalMemory;
 }
 
-/**
- * Gets the free memory size.
- */
 double MemoryManager::getFreeMemory() const {
     return freeMemory;
 }

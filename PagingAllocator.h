@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <fstream> // For file operations
+#include <list>    // For backing store representation
 #include "Process.h" // Assuming Process is a class that provides getProcessID(), getMemorySize(), and getNumPages() methods
 
 // Define the page size as 4KB if not already defined
@@ -26,10 +27,15 @@ public:
     // Visualization
     void visualizeMemory() const; // Prints the memory allocation map
     std::string getMemoryMap() const; // Returns a string representation of the memory map
+    void visualizeBackingStore() const; // Visualizes the content of the backing store
 
     // Memory statistics
     float getMemoryUtilization() const; // Returns memory utilization as a percentage
     size_t calculateExternalFragmentation() const; // Calculates external fragmentation in bytes
+
+    // Backing Store Operations
+    bool evictOldestPage(); // Evicts the oldest page to the backing store
+    bool restorePageFromBackingStore(size_t processId); // Restores a page from the backing store for a given process
 
     // Internal utility functions
     size_t allocateFrames(size_t numFrames, size_t processId, const std::vector<size_t>& pageSizes); // Allocates frames for a process
@@ -38,9 +44,15 @@ public:
     // Snapshot
     void saveMemorySnapshot(size_t snapshotId) const; // Saves the current memory state to a file
 
+    // Getter for frameMap (used for debugging and backing store operations)
+    const std::unordered_map<size_t, size_t>& getFrameMap() const;
+
 private:
     size_t maxMemorySize; // Total memory size in bytes
     size_t numFrames; // Total number of frames (maxMemorySize / PAGE_SIZE)
     std::unordered_map<size_t, size_t> frameMap; // Maps frame index to process ID
     std::vector<size_t> freeFrameList; // List of free frame indices
+
+    // Backing Store
+    std::list<std::pair<size_t, size_t>> backingStore; // Stores evicted pages (frame index, process ID pair)
 };
