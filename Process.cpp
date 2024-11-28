@@ -96,6 +96,31 @@ void Process::setCoreID(int coreID)
 	this->coreID = coreID;
 }
 
+void Process::saveToBackingStore() {
+    std::ofstream file("./BackingStore/process_" + std::to_string(pid) + ".txt");
+
+    if (file.is_open()) {
+        file << "Process ID: " << pid << "\n";
+        file << "Process Name: " << processName << "\n";
+        file << "Current Instruction Line: " << currentInstructionLine << "\n";
+        file << "Core ID: " << coreID << "\n";
+        
+        if (createdAt) {
+            file << "Created At: " << std::put_time(createdAt, "%c") << "\n";
+        }
+
+        if (finishedAt) {
+            file << "Finished At: " << std::put_time(finishedAt, "%c") << "\n";
+        }
+        
+        file << "Total Instructions: " << instructionList.size() << "\n";
+
+        file.close();
+        std::cout << "Process " << pid << " saved to backing store." << std::endl;
+    } else {
+        std::cerr << "Error: Unable to open file for process " << pid << std::endl;
+    }
+}
 
 bool Process::loadFromBackingStore() {
     std::ifstream file("./BackingStore/process_" + std::to_string(pid) + ".txt");
