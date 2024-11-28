@@ -21,13 +21,22 @@ MemoryManager::MemoryManager(int maxMemory, int processMemory)
  * @return True if memory allocation succeeded, otherwise False.
  */
 bool MemoryManager::allocateMemory(const std::string& processName) {
-    for (auto& block : memory) {
+    for (auto block : memory) {  // Use `auto` instead of `auto&` to avoid referencing the original blocks
         if (!block.isOccupied && (block.endAddress - block.startAddress + 1) >= processMemory) {
-            int end = block.startAddress + processMemory - 1;
-            memory.push_back({ end + 1, block.endAddress, false, "" }); // Remaining free block
+            int end = block.startAddress + processMemory - 1; // Calculate end of allocated range
+            
+            // Set the allocated block properties
             block.endAddress = end;
             block.isOccupied = true;
             block.processName = processName;
+
+            memory.push_back(block); // Push the updated block
+
+            // Create and push the remaining free block, if any
+            if (end + 1 <= block.endAddress) {
+                memory.push_back({ end + 1, block.endAddress, false, "" });
+            }
+            
             return true;
         }
     }
