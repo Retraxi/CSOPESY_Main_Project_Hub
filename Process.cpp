@@ -1,240 +1,133 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include "Process.h"
-#include <fstream>
 #include <iostream>
-#include <sstream>
 #include <iomanip>
-#include <ctime>
-Process::Process(int pid, std::string name) : pid(pid), processName(name)
-{
-	this->coreID = -1;
-	std::time_t now = std::time(nullptr);
-	createdAt = std::localtime(&now); //need this for scheduling
-	finishedAt = nullptr;
-	this->currentInstructionLine = 0;
+#include <cmath> // For std::ceil
+#include <utility> // For std::move
+
+// Constructor for processes without memory size
+Process::Process(int pid, std::string name)
+    : pid(pid), processName(std::move(name)), memorySize(0), coreID(-1), currentInstructionLine(0) {
+    std::time_t now = std::time(nullptr);
+    createdAt = std::localtime(&now);
+    finishedAt = nullptr;
+
+    std::cout << "Process Created: ID=" << pid << ", Name=" << processName
+        << ", No Memory Size Allocated.\n";
 }
 
-std::string Process::getName() 
-{
-	return this->processName;
+// Constructor for processes with memory size
+Process::Process(int pid, std::string name, size_t memorySize)
+    : pid(pid), processName(std::move(name)), memorySize(memorySize), coreID(-1), currentInstructionLine(0) {
+    std::time_t now = std::time(nullptr);
+    createdAt = std::localtime(&now);
+    finishedAt = nullptr;
+
+    std::cout << "Process Created: ID=" << pid << ", Name=" << processName
+        << ", Memory Size=" << memorySize << " bytes (" << getNumPages() << " pages).\n";
 }
 
-int Process::getCoreID()
-{
-	return this->coreID;
+// Getters
+std::string Process::getName() const {
+    return processName;
 }
 
-int Process::getProcessID() const
-{
-	return  this->pid;
+int Process::getCoreID() const {
+    return coreID;
 }
 
-int Process::getTotalInstructionLines() const
-{
-	return this->instructionList.size();
+int Process::getProcessID() const {
+    return pid;
 }
 
-int Process::getCurrentInstructionLines()
-{
-	return this->currentInstructionLine;
+int Process::getTotalInstructionLines() const {
+    return instructionList.size();
 }
 
-tm* Process::getCreatedAt()
-{
-	return this->createdAt;
+int Process::getCurrentInstructionLines() const {
+    return currentInstructionLine;
 }
 
-tm* Process::getFinishedAt()
-{
-	return this->finishedAt;
+size_t Process::getMemorySize() const {
+    return memorySize;
 }
 
-void Process::setFinishedAt(tm* finishedAt)
-{
-	std::lock_guard<std::mutex> lock(this->mtx);
-	this->finishedAt = finishedAt;
+size_t Process::getNumPages() const {
+    return (memorySize + PAGE_SIZE - 1) / PAGE_SIZE; // Round up to calculate pages
 }
 
-void Process::testInitFCFS()
-{
-	//specifically for the FCFS scheduler stuff
-	std::string instruction = "Hello world from " + processName;
-	for (size_t i = 0; i < 100; i++)
-	{
-		instructionList.push_back(instruction);
-	}
+// Time-related methods
+tm* Process::getCreatedAt() {
+    return createdAt;
+}
+
+tm* Process::getFinishedAt() {
+    return finishedAt;
+}
+
+void Process::setFinishedAt(tm* finishedAt) {
+    std::lock_guard<std::mutex> lock(mtx);
+    this->finishedAt = finishedAt;
+    std::cout << "Process ID=" << pid << " marked as finished at "
+        << std::put_time(finishedAt, "%c") << ".\n";
+}
+
+// Methods for instructions
+void Process::testInitFCFS() {
+    std::string instruction = "Test instruction from " + processName;
+    for (size_t i = 0; i < 100; i++) {
+        instructionList.push_back(instruction);
+    }
+    std::cout << "Process ID=" << pid << ": Initialized with 100 test instructions.\n";
 }
 
 void Process::setInstruction(int totalCount) {
-	std::string instruction = "Hello world from " + processName;
-	for (size_t i = 0; i < totalCount; i++)
-	{
-		instructionList.push_back(instruction);
-	}
-}
-
-bool Process::isDone()
-{
-	if (currentInstructionLine >= instructionList.size())
-	{
-		//std::cout << processName << " has finished!";
-		//it's done
-		std::time_t now = std::time(nullptr);
-		// Convert time to local time (tm struct)
-		setFinishedAt(std::localtime(&now));
-		return true;
-	}
-	else {
-		return false;
-	}
-}
-
-void Process::setCoreID(int coreID)
-
-{
-	std::lock_guard<std::mutex> lock(this->mtx);
-	this->coreID = coreID;
-}
-
-void Process::saveToBackingStore() {
-    std::ofstream file("./BackingStore/process_" + std::to_string(pid) + ".txt");
-
-    if (file.is_open()) {
-        file << "Process ID: " << pid << "\n";
-        file << "Process Name: " << processName << "\n";
-        file << "Current Instruction Line: " << currentInstructionLine << "\n";
-        file << "Core ID: " << coreID << "\n";
-        
-        if (createdAt) {
-            file << "Created At: " << std::put_time(createdAt, "%c") << "\n";
-        }
-
-        if (finishedAt) {
-            file << "Finished At: " << std::put_time(finishedAt, "%c") << "\n";
-        }
-        
-        file << "Total Instructions: " << instructionList.size() << "\n";
-
-        file.close();
-        std::cout << "Process " << pid << " saved to backing store." << std::endl;
-    } else {
-        std::cerr << "Error: Unable to open file for process " << pid << std::endl;
+    std::string instruction = "Instruction from " + processName;
+    for (int i = 0; i < totalCount; i++) {
+        instructionList.push_back(instruction);
     }
+    std::cout << "Process ID=" << pid << ": Initialized with " << totalCount << " instructions.\n";
 }
 
-bool Process::loadFromBackingStore() {
-    std::ifstream file("./BackingStore/process_" + std::to_string(pid) + ".txt");
-
-    if (file.is_open()) {
-        std::string line;
-        while (std::getline(file, line)) {
-            if (line.find("Process ID:") != std::string::npos) {
-                pid = std::stoi(line.substr(line.find(":") + 2));
-            } else if (line.find("Process Name:") != std::string::npos) {
-                processName = line.substr(line.find(":") + 2);
-            } else if (line.find("Current Instruction Line:") != std::string::npos) {
-                currentInstructionLine = std::stoi(line.substr(line.find(":") + 2));
-            } else if (line.find("Core ID:") != std::string::npos) {
-                coreID = std::stoi(line.substr(line.find(":") + 2));
-            } else if (line.find("Created At:") != std::string::npos) {
-                std::string createdAtStr = line.substr(line.find(":") + 2);
-
-                // Convert the string to a std::tm object
-                std::tm tm = {};
-                std::istringstream ss(createdAtStr);
-                ss >> std::get_time(&tm, "%Y-%m-%d %H:%M:%S");  // Assuming the date format is "2024-11-28 15:30:00"
-
-                if (ss.fail()) {
-                    std::cerr << "Failed to parse time string: " << createdAtStr << std::endl;
-                } else {
-                    // Convert std::tm to time_t
-                    std::time_t createdAtTime = std::mktime(&tm);
-                    createdAt = std::localtime(&createdAtTime);
-                }
-            } else if (line.find("Finished At:") != std::string::npos) {
-                std::string finishedAtStr = line.substr(line.find(":") + 2);
-
-                // Convert the string to a std::tm object
-                std::tm tm = {};
-                std::istringstream ss(finishedAtStr);
-                ss >> std::get_time(&tm, "%Y-%m-%d %H:%M:%S");  // Assuming the date format is "2024-11-28 15:30:00"
-
-                if (ss.fail()) {
-                    std::cerr << "Failed to parse time string: " << finishedAtStr << std::endl;
-                } else {
-                    // Convert std::tm to time_t
-                    std::time_t finishedAtTime = std::mktime(&tm);
-                    finishedAt = std::localtime(&finishedAtTime);
-                }
-            }
-        }
-
-        file.close();
-        std::cout << "Process " << pid << " loaded from backing store." << std::endl;
+// Check if the process is done executing
+bool Process::isDone() {
+    if (currentInstructionLine >= instructionList.size()) {
+        std::time_t now = std::time(nullptr);
+        setFinishedAt(std::localtime(&now));
+        std::cout << "Process ID=" << pid << " has completed execution.\n";
         return true;
-    } else {
-        std::cerr << "Error: Unable to open file for process " << pid << std::endl;
-        return false;
     }
+    return false;
 }
 
+// Set the core ID for the process
+void Process::setCoreID(int coreID) {
+    std::lock_guard<std::mutex> lock(mtx);
+    this->coreID = coreID;
+    std::cout << "Process ID=" << pid << " assigned to Core ID=" << coreID << ".\n";
+}
 
-void Process::execute()
-{
-	//std::lock_guard<std::mutex> lock(this->mtx);
-	//should probably make it so that there are different things this can do
-	//for now (09/10/24) it will be for printing to the outputfile
-	std::time_t now = std::time(nullptr);
+// Simulate process execution
+void Process::execute() {
+    std::time_t now = std::time(nullptr);
+    int dummy = 0; // Simulated workload
 
-	// Convert time to local time (tm struct)
-	std::tm* local_time = std::localtime(&now);
-	int dummy = 0;
+    if (!isDone()) {
+        std::cout << "Process ID=" << pid << " executing instruction " << currentInstructionLine + 1
+            << "/" << instructionList.size() << ".\n";
 
-	// Print time in desired format: Weekday | Month | Day | HH:MM:SS | YYYY
-	if (!this->isDone())
-	{
+        // Simulate processing delay
+        for (size_t i = 0; i < 10000; i++) {
+            dummy += 1;
+        }
 
-		//expensive operation or delay
-		//std::this_thread::sleep_for(std::chrono::microseconds(10));
+        currentInstructionLine++;
 
-		//or a long for loop
-		for (size_t i = 0; i < 10000; i++)
-		{
-			dummy += 1;
-		}
-		currentInstructionLine++;
-
-		//append or create file
-		/*
-		std::fstream output;
-
-		//check if file is new or old
-		std::ifstream checker("./Logs/" + processName + ".txt");
-		if (checker.good())
-		{
-			//append
-			checker.close();
-			output.open("./Logs/" + processName + ".txt", std::ios::out | std::ios::app);
-			output << std::put_time(local_time, "(%d/%m/%Y %I:%M:%S%p) ")
-				<< "Core:" << this->coreID
-				<< " " << instructionList.at(currentInstructionLine) << std::endl;
-			currentInstructionLine++;
-
-		}
-		else
-		{
-			//first time
-			checker.close();
-			output.open("./Logs/" + processName + ".txt", std::ios::out | std::ios::app);
-
-			output << "Process name: " << processName << std::endl;
-			output << "Logs: " << std::endl << std::endl;
-			output << std::put_time(local_time, "(%d/%m/%Y %I:%M:%S%p) ")
-				<< "Core:" << this->coreID
-				<< " " << instructionList.at(currentInstructionLine) << std::endl;
-			currentInstructionLine++;
-			output.close();
-		}
-		*/
-	}
+        if (isDone()) {
+            std::cout << "Process ID=" << pid << " has finished executing all instructions.\n";
+        }
+    }
+    else {
+        std::cout << "Process ID=" << pid << " is already completed.\n";
+    }
 }

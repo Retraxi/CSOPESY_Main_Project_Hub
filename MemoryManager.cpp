@@ -6,62 +6,144 @@
 
 /**
  * Initializes the MemoryManager with the maximum memory and process memory size.
- * Sets up the initial free memory block for allocation.
  */
 MemoryManager::MemoryManager(int maxMemory, int processMemory)
-    : maxMemory(maxMemory), processMemory(processMemory) {
-    memory.push_back({ 0, maxMemory - 1, false, "" }); // Initial free block
+    : maxMemory(maxMemory), processMemory(processMemory),
+    pagingAllocator(maxMemory), freeMemory(maxMemory),
+    totalMemory(maxMemory), minBlockSizeForAllocation(1), isPaging(false) {
+
+    if (maxMemory < processMemory) {
+        std::cerr << "Error: Maximum memory is less than process memory requirement.\n";
+        return;
+    }
+
+    memory.push_back({ 0, maxMemory - 1, false, "" }); // Initial free block for flat memory
+    std::cout << "MemoryManager Initialized in Flat Mode: maxMemory=" << maxMemory
+        << ", processMemory=" << processMemory << "\n";
 }
 
 /**
- * Allocates memory for a process using the first-fit allocation strategy.
- * - Finds the first available block with sufficient size.
- * - Splits the block if extra space remains after allocation.
- * @param processName Name of the process requesting memory.
- * @return True if memory allocation succeeded, otherwise False.
+ * Allocates memory for a process using the current allocation mode.
+ */
+bool MemoryManager::allocateMemory(const std::string& processName, size_t size) {
+    if (isPaging) {
+        Process process(1, processName, size); // Dummy PID used here
+        void* allocation = pagingAllocator.allocate(&process);
+        if (allocation) {
+            std::cout << "MemoryManager: Allocated " << size << " bytes for process " << processName << " in Paging mode.\n";
+            return true;
+        }
+        else {
+            std::cerr << "MemoryManager: Failed to allocate memory for process " << processName << " in Paging mode.\n";
+            return false;
+        }
+    }
+    else {
+        return allocateMemory(processName); // Flat allocation
+    }
+}
+
+/**
+ * Allocates memory for a process using the first-fit strategy (flat mode).
  */
 bool MemoryManager::allocateMemory(const std::string& processName) {
-    for (auto block : memory) {  // Use `auto` instead of `auto&` to avoid referencing the original blocks
+    for (auto& block : memory) {
         if (!block.isOccupied && (block.endAddress - block.startAddress + 1) >= processMemory) {
-            int end = block.startAddress + processMemory - 1; // Calculate end of allocated range
-            
-            // Set the allocated block properties
-            block.endAddress = end;
+            int allocatedEnd = block.startAddress + processMemory - 1;
+
+            // Update the block to reflect the allocated range
+            block.endAddress = allocatedEnd;
             block.isOccupied = true;
             block.processName = processName;
 
-            memory.push_back(block); // Push the updated block
-
-            // Create and push the remaining free block, if any
-            if (end + 1 <= block.endAddress) {
-                memory.push_back({ end + 1, block.endAddress, false, "" });
+            // Add a new free block for any remaining memory
+            if (allocatedEnd + 1 <= block.endAddress) {
+                memory.push_back({ allocatedEnd + 1, block.endAddress, false, "" });
             }
-            
+
+            freeMemory -= processMemory;
+            std::cout << "MemoryManager: Allocated " << processMemory << " bytes for process " << processName << " in Flat mode.\n";
             return true;
         }
     }
-    return false; // No available block found
+    std::cerr << "MemoryManager: Failed to allocate memory for process " << processName << " in Flat mode.\n";
+    return false;
 }
 
 /**
- * Frees the memory occupied by a specific process and merges adjacent free blocks.
- * @param processName Name of the process to free memory for.
+ * Deallocates memory assigned to a given process.
  */
 void MemoryManager::deallocateMemory(const std::string& processName) {
-    for (auto& block : memory) {
-        if (block.isOccupied && block.processName == processName) {
-            block.isOccupied = false;
-            block.processName = "";
-        }
+    if (isPaging) {
+        Process process(1, processName, 0); // Dummy PID and size
+        pagingAllocator.deallocate(&process);
     }
-    mergeFreeBlocks(); // Consolidate adjacent free blocks
+    else {
+        for (auto& block : memory) {
+            if (block.isOccupied && block.processName == processName) {
+                block.isOccupied = false;
+                block.processName = "";
+                freeMemory += (block.endAddress - block.startAddress + 1);
+                std::cout << "MemoryManager: Deallocated memory for process " << processName << " in Flat mode.\n";
+            }
+        }
+        mergeFreeBlocks();
+    }
 }
 
 /**
- * Calculates external fragmentation, the total memory of unused blocks.
- * @return Total external fragmentation in bytes.
+ * Switches to flat memory allocation mode.
+ */
+void MemoryManager::switchToFlat() {
+    if (isPaging) {
+        std::cout << "MemoryManager: Switching to Flat Memory Allocation mode.\n";
+        isPaging = false;
+
+        // Reset flat memory blocks
+        memory.clear();
+        memory.push_back({ 0, maxMemory - 1, false, "" }); // Reset to a single free block
+        freeMemory = maxMemory; // Reset free memory
+    }
+}
+
+/**
+ * Switches to paging memory allocation mode.
+ */
+void MemoryManager::switchToPaging() {
+    if (!isPaging) {
+        std::cout << "MemoryManager: Switching to Paging Memory Allocation mode.\n";
+        isPaging = true;
+
+        // Reset PagingAllocator
+        pagingAllocator = PagingAllocator(maxMemory);
+    }
+}
+
+/**
+ * Visualizes the current memory allocation.
+ */
+void MemoryManager::visualizeMemory() const {
+    if (isPaging) {
+        std::cout << "MemoryManager: Paging Mode Visualization:\n";
+        pagingAllocator.visualizeMemory();
+    }
+    else {
+        std::cout << "MemoryManager: Flat Mode Visualization:\n";
+        for (const auto& block : memory) {
+            std::cout << "Block [" << block.startAddress << " - " << block.endAddress << "]: ";
+            std::cout << (block.isOccupied ? block.processName : "Free") << "\n";
+        }
+    }
+}
+
+/**
+ * Calculates external fragmentation in flat mode.
  */
 int MemoryManager::calculateExternalFragmentation() const {
+    if (isPaging) {
+        return 0; // No external fragmentation in paging mode
+    }
+
     int fragmentation = 0;
     for (const auto& block : memory) {
         if (!block.isOccupied) {
@@ -72,44 +154,32 @@ int MemoryManager::calculateExternalFragmentation() const {
 }
 
 /**
- * Saves a snapshot of the current memory allocation state to a file.
- * Includes timestamp, number of processes in memory, external fragmentation,
- * and a detailed ASCII representation of memory blocks.
- * @param quantumCycle Current quantum cycle number.
+ * Saves a memory snapshot to a file.
  */
 void MemoryManager::saveMemorySnapshot(int quantumCycle) const {
-    std::ofstream file("memory_stamp_" + std::to_string(quantumCycle) + ".txt");
+    std::ofstream file("memory_snapshot_" + std::to_string(quantumCycle) + ".txt");
     if (!file.is_open()) {
-        std::cerr << "Error creating memory snapshot file." << std::endl;
+        std::cerr << "Error: Unable to open file for memory snapshot.\n";
         return;
     }
 
-    // Timestamp
-    auto t = std::time(nullptr);
-    struct tm timeInfo;
-    localtime_s(&timeInfo, &t);
-    file << "Timestamp: (" << std::put_time(&timeInfo, "%d/%m/%Y %I:%M:%S%p") << ")\n";
+    file << "Memory Snapshot #" << quantumCycle << "\n";
 
-    // Process count
-    int processCount = 0;
-    for (const auto& block : memory) {
-        if (block.isOccupied) processCount++;
+    if (isPaging) {
+        file << pagingAllocator.getMemoryMap();
     }
-    file << "Number of processes in memory: " << processCount << "\n";
-    file << "Total external fragmentation in KB: " << calculateExternalFragmentation() / 1024 << "\n";
+    else {
+        for (const auto& block : memory) {
+            file << "Block [" << block.startAddress << " - " << block.endAddress << "]: ";
+            file << (block.isOccupied ? block.processName : "Free") << "\n";
+        }
+    }
 
-    // Memory map
-    file << "----end---- = " << maxMemory << "\n";
-    for (auto it = memory.rbegin(); it != memory.rend(); ++it) {
-        file << it->endAddress + 1 << "\n" << (it->isOccupied ? it->processName : "Unused") << "\n" << it->startAddress << "\n";
-    }
-    file << "----start---- = 0\n";
     file.close();
 }
 
 /**
- * Merges adjacent free blocks to reduce memory fragmentation.
- * Called automatically after memory deallocation.
+ * Merges adjacent free blocks in flat mode.
  */
 void MemoryManager::mergeFreeBlocks() {
     for (auto it = memory.begin(); it != memory.end() - 1; ++it) {
@@ -121,28 +191,30 @@ void MemoryManager::mergeFreeBlocks() {
     }
 }
 
-
+/**
+ * Gets memory utilization as a percentage.
+ */
 double MemoryManager::getMemoryUtilization() const {
-    // Calculate memory utilization as a percentage of memory in use
-    return ((totalMemory - freeMemory) / totalMemory) * 100;
+    return ((totalMemory - freeMemory) / totalMemory) * 100.0;
 }
 
-
+/**
+ * Gets external fragmentation in bytes.
+ */
 double MemoryManager::getExternalFragmentation() const {
-    // Calculate external fragmentation: sum of free blocks that cannot be used
-    double fragmentedMemory = 0.0;
-    for (double block : freeBlocks) {
-        if (block < minBlockSizeForAllocation) {  // Define a minimum block size that is useful
-            fragmentedMemory += block;
-        }
-    }
-    return fragmentedMemory;
+    return calculateExternalFragmentation();
 }
 
+/**
+ * Gets the total memory size.
+ */
 double MemoryManager::getTotalMemory() const {
     return totalMemory;
 }
 
+/**
+ * Gets the free memory size.
+ */
 double MemoryManager::getFreeMemory() const {
     return freeMemory;
 }

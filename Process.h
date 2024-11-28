@@ -3,59 +3,66 @@
 #include <vector>
 #include <string>
 #include <mutex>
+#include <ctime> // For std::tm
+
+#ifndef PAGE_SIZE
+#define PAGE_SIZE 4096 // 4KB page size for paging systems
+#endif
 
 class Process {
-	//what's needed in a process
-	/* Reference: Overview of the  OS Emulator [Timestamp: 42:34]
-		- Core ID to tell which Core it's using
-		- some sort of command list, like instruction thing
-		- isRunning since it's a process that is working
-		- ETA till finishing
-		- current instruction line -> next instruction line
-		- getter functions
-		- ID
-		- name
+    /* Class Overview:
+       - Core ID: Identifies the CPU core running the process.
+       - Instruction List: List of commands/instructions the process will execute.
+       - Process State: Tracks execution progress and completion status.
+       - Time Stamps: Created and finished timestamps.
+       - Memory: Memory requirements for paging systems.
+    */
 
-	*/
 public:
-	Process(int pid, std::string name);
-	~Process() = default;
-	int pid;
-	
+    // Constructor for processes without memory requirements
+    Process(int pid, std::string name);
 
-	std::string getName();
-	int getProcessID() const;
-	int getTotalInstructionLines() const;
-	int getCurrentInstructionLines();
-	int getCoreID();
+    // Constructor for processes with memory requirements
+    Process(int pid, std::string name, size_t memorySize);
 
-	tm* getCreatedAt();
-	tm* getFinishedAt();
-	void setFinishedAt(tm* finishedAt);
+    // Default destructor
+    ~Process() = default;
 
+    // Getters for process attributes
+    std::string getName() const;
+    int getProcessID() const;
+    int getCoreID() const;
+    int getTotalInstructionLines() const;
+    int getCurrentInstructionLines() const;
 
-	void setCoreID(int coreID);
-	void setInstruction(int totalCount);
-	void testInitFCFS();
+    // Memory-related getters
+    size_t getMemorySize() const; // Returns the memory size of the process
+    size_t getNumPages() const;   // Calculates the number of pages needed for the process
 
-	void execute();
-	bool isDone();
+    // Time-related methods
+    tm* getCreatedAt();           // Returns the creation timestamp
+    tm* getFinishedAt();          // Returns the finished timestamp
+    void setFinishedAt(tm* finishedAt); // Sets the finished timestamp
 
-	// Method to save the process state to the backing store
-    void saveToBackingStore();
+    // Setters and modifiers
+    void setCoreID(int coreID);   // Assigns a CPU core to the process
+    void setInstruction(int totalCount); // Adds a specified number of instructions
+    void testInitFCFS();          // Initializes test instructions for First-Come-First-Serve scheduling
 
-    // Method to load the process state from the backing store
-    bool loadFromBackingStore();
-
-
+    // Execution-related methods
+    void execute();               // Executes the current instruction
+    bool isDone();                // Checks if the process has completed all instructions
 
 private:
-	std::mutex mtx;
+    std::mutex mtx;               // Mutex for thread-safe updates
 
-	int coreID;
-	int currentInstructionLine;
-    std::tm* createdAt;
-	std::tm* finishedAt;
-	std::string processName;
-	std::vector<std::string> instructionList; 
+    // Process attributes
+    int pid;                      // Process ID
+    int coreID;                   // Assigned CPU core ID
+    int currentInstructionLine;   // Current instruction being executed
+    size_t memorySize;            // Memory size required for the process (used in paging)
+    std::tm* createdAt;           // Timestamp when the process was created
+    std::tm* finishedAt;          // Timestamp when the process was finished
+    std::string processName;      // Name of the process
+    std::vector<std::string> instructionList; // List of instructions/commands
 };
