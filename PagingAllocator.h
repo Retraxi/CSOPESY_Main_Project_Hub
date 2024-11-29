@@ -6,6 +6,7 @@
 #include <fstream> // For file operations
 #include <list>    // For backing store representation
 #include "Process.h" // Assuming Process is a class that provides getProcessID(), getMemorySize(), and getNumPages() methods
+#include <iostream>
 
 // Define the page size as 4KB if not already defined
 #ifndef PAGE_SIZE
@@ -17,8 +18,13 @@ public:
     // Default Constructor
     PagingAllocator(); // Initializes with default values (no memory allocated)
 
-    // Constructor with specified memory size
-    explicit PagingAllocator(size_t maxMemorySize);
+    void setBackingStoreDirectory(const std::string& directory); // Sets the backing store directory
+
+
+    PagingAllocator(size_t maxMemorySize);
+
+    // Constructor with specified memory size and mode
+    explicit PagingAllocator(size_t maxMemorySize, const std::string& memoryMode);
 
     // Allocation and deallocation
     void* allocate(Process* process); // Allocates memory for a process
@@ -36,6 +42,8 @@ public:
     // Backing Store Operations
     bool evictOldestPage(); // Evicts the oldest page to the backing store
     bool restorePageFromBackingStore(size_t processId); // Restores a page from the backing store for a given process
+    void saveProcessToBackingStore(Process* process); // NEW: Saves process data to the backing store
+    Process* loadProcessFromBackingStore(size_t processId); // NEW: Loads process data from the backing store
 
     // Internal utility functions
     size_t allocateFrames(size_t numFrames, size_t processId, const std::vector<size_t>& pageSizes); // Allocates frames for a process
@@ -53,6 +61,20 @@ private:
     std::unordered_map<size_t, size_t> frameMap; // Maps frame index to process ID
     std::vector<size_t> freeFrameList; // List of free frame indices
 
+    std::string backingStoreDirectory; // Directory for backing store files
+
+
     // Backing Store
-    std::list<std::pair<size_t, size_t>> backingStore; // Stores evicted pages (frame index, process ID pair)
+    std::list<std::pair<size_t, std::string>> backingStore; // Modified: Stores evicted processes as (processId, filename)
+
+    // Helper function for backing store file management
+    std::string generateBackingStoreFilename(size_t processId) const; // NEW: Generates a filename for a process in the backing store
+
+    // Flat memory mode attributes
+    std::string memoryMode; // Memory mode: "flat" or "paged"
+    size_t flatMemoryAllocated; // Tracks memory allocated in flat mode
+
+    // Flat memory management utilities
+    bool allocateFlatMemory(Process* process); // Handles flat memory allocation
+    void deallocateFlatMemory(Process* process); // Handles flat memory deallocation
 };

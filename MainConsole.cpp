@@ -2,6 +2,7 @@
 #include "ConsoleManager.h"
 #include "CPUScheduler.h"
 #include <iostream>
+#include "PagingAllocator.h"
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -71,6 +72,15 @@ void MainConsole::process()
 				this->refresh = false; //when exiting back will re-print the header
 			}
 		}
+		else if (command.substr(0, 14) == "save-backstore")
+		{
+			// Save a snapshot of the current memory to the backing store
+			size_t snapshotId = std::stoul(command.substr(15));
+			PagingAllocator allocator; // Ensure PagingAllocator is initialized properly
+			allocator.saveMemorySnapshot(snapshotId);
+			std::cout << "Backstore snapshot saved as memory_snapshot_" << snapshotId << ".txt\n";
+		}
+
 		else if (command.substr(0, 9) == "screen -s")
 		{
 			//make process using it for now
@@ -164,6 +174,23 @@ void MainConsole::process()
 				}
 
 				reader.close();
+				// Validate and process the required fields
+				if (configTable.find("memory-mode") == configTable.end() ||
+					configTable.find("backing-store-dir") == configTable.end()) {
+					std::cout << "[ERROR]: Missing required configuration keys: memory-mode or backing-store-dir." << std::endl;
+					return;
+				}
+				std::string memoryMode = configTable["memory-mode"];
+				std::string backingStoreDir = configTable["backing-store-dir"];
+
+				// Ensure memoryMode is valid ("flat" or "paged")
+				if (memoryMode != "flat" && memoryMode != "paged") {
+					std::cout << "[ERROR]: Invalid memory-mode value. Use \"flat\" or \"paged\"." << std::endl;
+					return;
+				}
+
+				PagingAllocator allocator(stoul(configTable["max-ins"]), memoryMode);
+				allocator.setBackingStoreDirectory(backingStoreDir); // New method for setting backing store directory
 
 				//std::cout << configTable["num-cpu"] << std::endl;
 				//initialize the CPU Scheduler using the read data
@@ -191,7 +218,8 @@ void MainConsole::process()
 				);
 
 				this->initialized = true;
-				std::cout << "Initialization complete." << std::endl;
+				std::cout << "Initialization complete with Memory Mode: " << memoryMode
+					<< " and Backing Store Directory: " << backingStoreDir << "." << std::endl;
 			}
 
 		}

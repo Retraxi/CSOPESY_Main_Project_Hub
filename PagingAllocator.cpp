@@ -10,7 +10,14 @@
 #endif
 
 // Default Constructor
-PagingAllocator::PagingAllocator() : maxMemorySize(0), numFrames(0) {}
+PagingAllocator::PagingAllocator() : maxMemorySize(0), numFrames(0), flatMemoryAllocated(0) {}
+std::string PagingAllocator::generateBackingStoreFilename(size_t processId) const {
+    return backingStoreDirectory + "/process_" + std::to_string(processId) + ".txt";
+}
+
+
+// Default Constructor
+
 
 // Parameterized Constructor
 PagingAllocator::PagingAllocator(size_t maxMemorySize)
@@ -28,6 +35,7 @@ PagingAllocator::PagingAllocator(size_t maxMemorySize)
         << " frames (" << maxMemorySize << " bytes total).\n";
     std::cout << "Initial Free Frames: " << freeFrameList.size() << "\n";
 }
+
 
 // Memory Allocation
 void* PagingAllocator::allocate(Process* process) {
@@ -64,6 +72,22 @@ void* PagingAllocator::allocate(Process* process) {
     return reinterpret_cast<void*>(startingFrame);
 }
 
+#include <filesystem> // For directory checks (C++17)
+
+void PagingAllocator::setBackingStoreDirectory(const std::string& directory) {
+    // Check if the directory exists, and create it if not
+    if (!std::filesystem::exists(directory)) {
+        if (!std::filesystem::create_directory(directory)) {
+            std::cerr << "Error: Unable to create backing store directory: " << directory << "\n";
+            return;
+        }
+    }
+
+    this->backingStoreDirectory = directory; // Store the directory path
+    std::cout << "Backing store directory set to: " << directory << "\n";
+}
+
+
 // Memory Deallocation
 void PagingAllocator::deallocate(Process* process) {
     if (!process) {
@@ -90,7 +114,7 @@ void PagingAllocator::deallocate(Process* process) {
 
     // Remove from backing store if present
     backingStore.remove_if([processId](const auto& page) {
-        return page.second == processId;
+        return page.second == std::to_string(processId); // Convert processId to string
         });
 
     if (deallocated) {
@@ -114,7 +138,7 @@ bool PagingAllocator::evictOldestPage() {
 
     // Evict the first (oldest) frame
     auto oldestFrame = frameMap.begin();
-    backingStore.push_back({ oldestFrame->first, oldestFrame->second });
+    backingStore.push_back({ oldestFrame->first, std::to_string(oldestFrame->second) }); // Convert to string
     std::cout << "Paging: Evicted Frame " << oldestFrame->first << " (Process "
         << oldestFrame->second << ") to backing store.\n";
 
@@ -124,10 +148,11 @@ bool PagingAllocator::evictOldestPage() {
     return true;
 }
 
+
 // Backing Store: Restore Page
 bool PagingAllocator::restorePageFromBackingStore(size_t processId) {
     for (auto it = backingStore.begin(); it != backingStore.end(); ++it) {
-        if (it->second == processId) {
+        if (it->second == std::to_string(processId)) { // Convert processId to string
             size_t frame = it->first;
 
             if (freeFrameList.empty()) {
@@ -147,6 +172,7 @@ bool PagingAllocator::restorePageFromBackingStore(size_t processId) {
     std::cerr << "Paging: No pages for Process " << processId << " found in backing store.\n";
     return false;
 }
+
 
 // Memory Visualization
 void PagingAllocator::visualizeMemory() const {
@@ -171,56 +197,7 @@ void PagingAllocator::visualizeBackingStore() const {
     }
 }
 
-// Allocate Frames
-size_t PagingAllocator::allocateFrames(size_t numFrames, size_t processId, const std::vector<size_t>& pageSizes) {
-    if (numFrames > freeFrameList.size()) {
-        std::cerr << "Error: Not enough free frames to allocate.\n";
-        return SIZE_MAX; // Not enough free frames
-    }
-
-    size_t startingFrame = freeFrameList.back();
-    for (size_t i = 0; i < numFrames; ++i) {
-        size_t frame = freeFrameList.back();
-        freeFrameList.pop_back();
-        frameMap[frame] = processId;
-        std::cout << "Allocated Frame " << frame << " to Process " << processId << ".\n";
-    }
-    return startingFrame;
-}
-
-// Save Memory Snapshot
-void PagingAllocator::saveMemorySnapshot(size_t snapshotId) const {
-    std::ofstream snapshotFile("memory_snapshot_" + std::to_string(snapshotId) + ".txt");
-    if (!snapshotFile.is_open()) {
-        std::cerr << "Error: Unable to save memory snapshot.\n";
-        return;
-    }
-
-    snapshotFile << "Memory Snapshot #" << snapshotId << "\n";
-    snapshotFile << "Frame Map:\n";
-
-    for (size_t i = 0; i < numFrames; ++i) {
-        auto it = frameMap.find(i);
-        if (it != frameMap.end()) {
-            snapshotFile << "Frame " << i << " -> Process " << it->second << "\n";
-        }
-        else {
-            snapshotFile << "Frame " << i << " -> Free\n";
-        }
-    }
-
-    snapshotFile << "Free Frames: " << freeFrameList.size() << "\n";
-    snapshotFile << "Backing Store:\n";
-
-    for (const auto& page : backingStore) {
-        snapshotFile << "Frame " << page.first << " -> Process " << page.second << "\n";
-    }
-
-    snapshotFile.close();
-    std::cout << "Paging: Memory snapshot #" << snapshotId << " saved successfully.\n";
-}
-
-// Memory Map
+// Memory Map (Retained from Original Implementation)
 std::string PagingAllocator::getMemoryMap() const {
     std::stringstream mapStream;
     for (size_t i = 0; i < numFrames; ++i) {
@@ -235,28 +212,25 @@ std::string PagingAllocator::getMemoryMap() const {
     return mapStream.str();
 }
 
-// Memory Utilization
+// Memory Utilization (Retained from Original Implementation)
 float PagingAllocator::getMemoryUtilization() const {
     size_t totalFrames = numFrames;
     size_t usedFrames = frameMap.size();
     return static_cast<float>(usedFrames) / totalFrames * 100.0f;
 }
 
-// External Fragmentation
+// External Fragmentation (Retained from Original Implementation)
 size_t PagingAllocator::calculateExternalFragmentation() const {
     size_t fragmentedMemory = 0;
     size_t freeFrameCount = freeFrameList.size();
     size_t totalFrames = numFrames;
 
-    // External fragmentation occurs when free frames are scattered,
-    // but for simplicity, we're just calculating how much memory is unused.
     fragmentedMemory = (totalFrames - freeFrameCount) * PAGE_SIZE;
     return fragmentedMemory;
 }
 
-// Deallocate Frames
+// Deallocate Frames (Retained from Original Implementation)
 void PagingAllocator::deallocateFrames(size_t numFrames, size_t frameIndex, const std::vector<size_t>& pageSizes) {
-    // This function assumes we're deallocating frames that were previously allocated.
     if (numFrames == 0 || frameIndex >= numFrames) {
         std::cerr << "Error: Invalid number of frames or frame index for deallocation.\n";
         return;
@@ -264,14 +238,14 @@ void PagingAllocator::deallocateFrames(size_t numFrames, size_t frameIndex, cons
 
     for (size_t i = 0; i < numFrames; ++i) {
         if (frameIndex + i < numFrames) {
-            freeFrameList.push_back(frameIndex + i);  // Reclaim the frame
-            frameMap.erase(frameIndex + i);  // Remove from frameMap
+            freeFrameList.push_back(frameIndex + i); // Reclaim the frame
+            frameMap.erase(frameIndex + i); // Remove from frameMap
             std::cout << "Deallocated Frame " << frameIndex + i << "\n";
         }
     }
 }
 
-// Getter for Frame Map (used for debugging and backing store operations)
+// Getter for Frame Map (Retained from Original Implementation)
 const std::unordered_map<size_t, size_t>& PagingAllocator::getFrameMap() const {
     return frameMap;
 }
