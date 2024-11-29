@@ -5,10 +5,10 @@
 #include <sstream>
 #include <random>
 #include <fstream>
-#include "MemoryManager.h"
+#include "FlatMemoryAllocator.h"
+#include "PagingAllocator.h"
 CPUScheduler* CPUScheduler::sharedInstance = nullptr;
 // Initialize MemoryManager with 16,384 bytes of memory and 4,096 bytes per process
-MemoryManager memoryManager(16384, 4096);
 
 CPUScheduler* CPUScheduler::getInstance()
 {
@@ -35,7 +35,8 @@ void CPUScheduler::addProcess(std::shared_ptr<Process> process)
 void CPUScheduler::initialize(int cpuNum, std::string schedulerType,
 	unsigned int quantumCycles, unsigned int batchProcessFreq,
 	unsigned int minIns, unsigned int maxIns,
-	unsigned int execDelay)
+	unsigned int execDelay, int maxMemory,
+	int minMPP, int maxMPP)
 {
 	//make the cpulist
 	sharedInstance = new CPUScheduler(); //like in ConsoleManager/
@@ -45,6 +46,12 @@ void CPUScheduler::initialize(int cpuNum, std::string schedulerType,
 	sharedInstance->minIns = minIns;
 	sharedInstance->maxIns = maxIns;
 	sharedInstance->execDelay = execDelay;
+
+	sharedInstance->flatmem = new FlatMemoryAllocator(maxMemory);
+	sharedInstance->minMPP = minMPP;
+	sharedInstance->maxMPP = maxMPP;
+
+	sharedInstance->pagingAlloc = new PagingAllocator(maxMemory);
 
 	for (size_t i = 1; i < sharedInstance->coresTotal + 1; i++)
 	{
@@ -100,6 +107,8 @@ void CPUScheduler::generateProcesses() {
 		"process_" + std::to_string(ConsoleManager::getInstance()->tableSize() - 2)); // -2 pffset cause of MAIN and MARQUEE
 	//set the amount of instructions based on the given range from the config
 	dummy->setInstruction(distr(gen));
+	std::uniform_int_distribution<> distr2(this->minMPP, this->maxMPP); //addition of random memory
+	dummy->setMemorySize(distr2(gen));
 	addProcess(dummy);
 }
 

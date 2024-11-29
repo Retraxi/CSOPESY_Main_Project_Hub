@@ -133,9 +133,9 @@
     <ClCompile Include="Core.cpp" />
     <ClCompile Include="CPUScheduler.cpp" />
     <ClCompile Include="CSOPESY_CLayout.cpp" />
+    <ClCompile Include="FlatMemoryAllocator.cpp" />
     <ClCompile Include="MainConsole.cpp" />
     <ClCompile Include="MarqueeConsole.cpp" />
-    <ClCompile Include="MemoryManager.cpp" />
     <ClCompile Include="PagingAllocator.cpp" />
     <ClCompile Include="Process.cpp" />
     <ClCompile Include="Screen.cpp" />
@@ -145,11 +145,10 @@
     <ClInclude Include="ConsoleManager.h" />
     <ClInclude Include="Core.h" />
     <ClInclude Include="CPUScheduler.h" />
-    <ClInclude Include="ICommand.h" />
-    <ClInclude Include="IETThread.h" />
+    <ClInclude Include="FlatMemoryAllocator.h" />
+    <ClInclude Include="IMemoryAllocator.h" />
     <ClInclude Include="MainConsole.h" />
     <ClInclude Include="MarqueeConsole.h" />
-    <ClInclude Include="MemoryManager.h" />
     <ClInclude Include="PagingAllocator.h" />
     <ClInclude Include="Process.h" />
     <ClInclude Include="Screen.h" />

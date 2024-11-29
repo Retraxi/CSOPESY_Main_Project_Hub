@@ -1,6 +1,8 @@
 #pragma once
 #include "Core.h"
 #include "ConsoleManager.h"
+#include "FlatMemoryAllocator.h"
+#include "PagingAllocator.h"
 #include <queue>
 
 class CPUScheduler
@@ -10,7 +12,8 @@ public:
 	static void initialize(int cpuNum, std::string schedulerType,
 		unsigned int quantumCycles, unsigned int batchProcessFreq,
 		unsigned int minIns, unsigned int maxIns,
-		unsigned int execDelay);
+		unsigned int execDelay, int maxMemory,
+		int minMPP, int maxMPP);
 	static CPUScheduler* getInstance();
 	static void destroy();
 
@@ -29,7 +32,7 @@ public:
     // void execute();
 
 private:
-
+	
 	CPUScheduler();
 	~CPUScheduler() = default;
 	static CPUScheduler* sharedInstance;
@@ -53,6 +56,11 @@ private:
 	std::queue<std::shared_ptr<Process>> unfinishedQueue; //non-permanent queue for unfinished processes
 	std::vector<std::shared_ptr<Core>> cpuCores; //permanent cores
 	std::vector<std::shared_ptr<Process>> processList; //permanent process list
+
+	FlatMemoryAllocator* flatmem;
+	PagingAllocator* pagingAlloc;
+	int minMPP;
+	int maxMPP;
 
 	friend class ConsoleManager;
 };

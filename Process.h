@@ -5,9 +5,11 @@
 #include <mutex>
 #include <ctime> // For std::tm
 
+/*
 #ifndef PAGE_SIZE
 #define PAGE_SIZE 4096 // 4KB page size for paging systems
 #endif
+*/
 
 class Process {
     /* Class Overview:
@@ -47,6 +49,7 @@ public:
 
     // Setters and modifiers
     void setCoreID(int coreID);   // Assigns a CPU core to the process
+    void setMemorySize(size_t memorySize);
     void setInstruction(int totalCount); // Adds a specified number of instructions
     void testInitFCFS();          // Initializes test instructions for First-Come-First-Serve scheduling
 
@@ -61,10 +64,14 @@ private:
     int pid;                      // Process ID
     int coreID;                   // Assigned CPU core ID
     int currentInstructionLine;   // Current instruction being executed
-    size_t memorySize;            // Memory size required for the process (used in paging)
+    
     std::tm* createdAt;           // Timestamp when the process was created
     std::tm* finishedAt;          // Timestamp when the process was finished
     std::string processName;      // Name of the process
     std::vector<std::string> instructionList; // List of instructions/commands
     int commandCounter;  //added command counter
+
+    size_t memorySize;            // Memory size required for the process (used in memory allocation)
+    size_t memoryIndex; //Flat Mem Alloc reference
+    std::vector<size_t> pageIndices; //frame, page, whatever, reference for Paging
 };

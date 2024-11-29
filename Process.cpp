@@ -1,4 +1,4 @@
-#define _CRT_SECURE_NO_WARNINGS
+//#define _CRT_SECURE_NO_WARNINGS
 #include "Process.h"
 #include <iostream>
 #include <iomanip>
@@ -52,12 +52,16 @@ int Process::getCommandCounter() const {
     return commandCounter;
 }
 
+void Process::setMemorySize(size_t memorySize) {
+    this->memorySize = memorySize;
+}
+
 size_t Process::getMemorySize() const {
     return memorySize;
 }
 
 size_t Process::getNumPages() const {
-    return (memorySize + PAGE_SIZE - 1) / PAGE_SIZE; // Round up to calculate pages
+    //
 }
 
 // Time-related methods

@@ -174,24 +174,6 @@ void MainConsole::process()
 				}
 
 				reader.close();
-				// Validate and process the required fields
-				if (configTable.find("memory-mode") == configTable.end() ||
-					configTable.find("backing-store-dir") == configTable.end()) {
-					std::cout << "[ERROR]: Missing required configuration keys: memory-mode or backing-store-dir." << std::endl;
-					return;
-				}
-				std::string memoryMode = configTable["memory-mode"];
-				std::string backingStoreDir = configTable["backing-store-dir"];
-
-				// Ensure memoryMode is valid ("flat" or "paged")
-				if (memoryMode != "flat" && memoryMode != "paged") {
-					std::cout << "[ERROR]: Invalid memory-mode value. Use \"flat\" or \"paged\"." << std::endl;
-					return;
-				}
-
-				PagingAllocator allocator(stoul(configTable["max-ins"]), memoryMode);
-				allocator.setBackingStoreDirectory(backingStoreDir); // New method for setting backing store directory
-
 				//std::cout << configTable["num-cpu"] << std::endl;
 				//initialize the CPU Scheduler using the read data
 				//it didn't work when I put it directly so I'm assigning it to some values
@@ -201,6 +183,10 @@ void MainConsole::process()
 				unsigned int miIns = stoul(configTable["min-ins"]);
 				unsigned int maIns = stoul(configTable["max-ins"]);
 				unsigned int dpEx = 0; //if it's somehow empty
+
+				int maxMemory = stoul(configTable["max-overall-mem"]);
+				int minMPP = stoul(configTable["min-mem-per-proc"]);
+				int maxMPP = stoul(configTable["max-mem-per-proc"]);
 
 				if (configTable["delays-per-exec"] == "\0")
 				{
@@ -218,8 +204,8 @@ void MainConsole::process()
 				);
 
 				this->initialized = true;
-				std::cout << "Initialization complete with Memory Mode: " << memoryMode
-					<< " and Backing Store Directory: " << backingStoreDir << "." << std::endl;
+				//std::cout << "Initialization complete with Memory Mode: " << memoryMode
+					//<< " and Backing Store Directory: " << backingStoreDir << "." << std::endl;
 			}
 
 		}
