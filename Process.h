@@ -41,6 +41,7 @@ public:
     // Memory-related getters
     size_t getMemorySize() const; // Returns the memory size of the process
     size_t getNumPages() const;   // Calculates the number of pages needed for the process
+    std::vector<size_t> getFrameIndices();
 
     // Time-related methods
     tm* getCreatedAt();           // Returns the creation timestamp
@@ -50,6 +51,7 @@ public:
     // Setters and modifiers
     void setCoreID(int coreID);   // Assigns a CPU core to the process
     void setMemorySize(size_t memorySize);
+    void setFrameIndices(std::vector<size_t> frameIndices);
     void setInstruction(int totalCount); // Adds a specified number of instructions
     void testInitFCFS();          // Initializes test instructions for First-Come-First-Serve scheduling
 
@@ -73,5 +75,5 @@ private:
 
     size_t memorySize;            // Memory size required for the process (used in memory allocation)
     size_t memoryIndex; //Flat Mem Alloc reference
-    std::vector<size_t> pageIndices; //frame, page, whatever, reference for Paging
+    std::vector<size_t> frameIndices; //frame, page, whatever, reference for Paging
 };

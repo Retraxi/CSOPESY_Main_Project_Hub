@@ -7,14 +7,31 @@ PagingAllocator::PagingAllocator(size_t maxMemory) {
 
 void* PagingAllocator::allocate(std::shared_ptr<Process> process) {
 	size_t processId = process->getProcessID();
-	size_t numFramesNeeded = process->getNumPages();
-	if (numFramesNeeded > freeFrameList.size()) {
-		std::cerr << "Memory Allocation failed, not enough free frames. " << std::endl;
-		return nullptr;
-	}
+	size_t numFramesNeeded = process->getMemorySize() / memPerFrame; //gets the number of frames needed
+	if (numFramesNeeded <= freeFrameList.size() && process->getFrameIndices().empty()) {
+		//Scenario for entirely new processes
+		//std::cerr << "Memory Allocation failed, not enough free frames. " << std::endl;
+		//If lacking frames -> allocate frames until full
+		processOrder.push(process);
+		size_t frameIndex = allocateFrames(numFramesNeeded, processId);
 
-	size_t frameIndex = allocateFrames(numFramesNeeded, processId);
-	return reinterpret_cast<void*>(frameIndex); //different from static cast	
+		return reinterpret_cast<void*>(frameIndex); //different from static cast
+	}
+	else {
+		//check if the process is already allocated, e.g. it's been given pages and is coming back from its
+		//last quantum cycle, also check if it's lacking pages compared to last time
+
+		if (!process->getFrameIndices().empty() && numFramesNeeded == process->getFrameIndices().size())
+		{
+			//if allocated and not lacking then do nothing
+		}
+
+		//add in the process and take note of its age
+		processOrder.push(process);
+
+		size_t frameIndex = allocateFrames(numFramesNeeded, processId);
+		return reinterpret_cast<void*>(frameIndex); //different from static cast	
+	}
 }
 
 void PagingAllocator::deallocate(std::shared_ptr<Process> process) {

@@ -139,3 +139,11 @@ void Process::execute() {
         std::cout << "Process ID=" << pid << " is already completed.\n";
     }
 }
+
+void Process::setFrameIndices(std::vector<size_t> frameIndices) {
+    this->frameIndices = frameIndices;
+}
+
+std::vector<size_t> Process::getFrameIndices() {
+    return frameIndices;
+}
