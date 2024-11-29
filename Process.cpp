@@ -48,6 +48,10 @@ int Process::getCurrentInstructionLines() const {
     return currentInstructionLine;
 }
 
+int Process::getCommandCounter() const {
+    return commandCounter;
+}
+
 size_t Process::getMemorySize() const {
     return memorySize;
 }

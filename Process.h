@@ -30,6 +30,7 @@ public:
 
     // Getters for process attributes
     std::string getName() const;
+    int getCommandCounter() const;
     int getProcessID() const;
     int getCoreID() const;
     int getTotalInstructionLines() const;
@@ -65,4 +66,5 @@ private:
     std::tm* finishedAt;          // Timestamp when the process was finished
     std::string processName;      // Name of the process
     std::vector<std::string> instructionList; // List of instructions/commands
+    int commandCounter;  //added command counter
 };

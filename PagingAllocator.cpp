@@ -1,6 +1,7 @@
 #include "PagingAllocator.h"
 #include <iostream>
 #include <sstream>
+#include "Process.h" //for command counter
 #include <vector>
 #include <limits> // For SIZE_MAX
 #include <fstream> // For snapshot saving
@@ -9,6 +10,8 @@
 #ifndef PAGE_SIZE
 #define PAGE_SIZE 4096 // 4KB page size
 #endif
+
+
 
 // Default Constructor
 PagingAllocator::PagingAllocator()
@@ -214,6 +217,32 @@ void PagingAllocator::saveProcessToBackingStore(Process* process) {
     file.close();
     std::cout << "Process " << process->getName() << " saved to " << filename << ".\n";
 }
+void PagingAllocator::saveMemorySnapshot(size_t snapshotId) const {
+    std::string filename = "memory_snapshot_" + std::to_string(snapshotId) + ".txt";
+    std::ofstream file(filename);
+
+    if (!file.is_open()) {
+        std::cerr << "Error: Unable to create memory snapshot file.\n";
+        return;
+    }
+
+    file << "Memory Snapshot #" << snapshotId << "\n";
+
+    // Include the frame map in the snapshot
+    for (const auto& frame : frameMap) {
+        file << "Frame " << frame.first << " -> Process " << frame.second << "\n";
+    }
+
+    // Include free frames in the snapshot
+    file << "Free Frames: ";
+    for (const auto& frame : freeFrameList) {
+        file << frame << " ";
+    }
+    file << "\n";
+
+    file.close();
+    std::cout << "Memory snapshot saved to " << filename << ".\n";
+}
 
 
 // Memory Map (Retained from Original Implementation)
@@ -238,15 +267,15 @@ float PagingAllocator::getMemoryUtilization() const {
     return static_cast<float>(usedFrames) / totalFrames * 100.0f;
 }
 
-// External Fragmentation (Retained from Original Implementation)
-size_t PagingAllocator::calculateExternalFragmentation() const {
-    size_t fragmentedMemory = 0;
-    size_t freeFrameCount = freeFrameList.size();
-    size_t totalFrames = numFrames;
-
-    fragmentedMemory = (totalFrames - freeFrameCount) * PAGE_SIZE;
-    return fragmentedMemory;
-}
+//// External Fragmentation (Retained from Original Implementation)
+//size_t PagingAllocator::calculateExternalFragmentation() const {
+//    size_t fragmentedMemory = 0;
+//    size_t freeFrameCount = freeFrameList.size();
+//    size_t totalFrames = numFrames;
+//
+//    fragmentedMemory = (totalFrames - freeFrameCount) * PAGE_SIZE;
+//    return fragmentedMemory;
+//}
 
 // Deallocate Frames (Retained from Original Implementation)
 void PagingAllocator::deallocateFrames(size_t numFrames, size_t frameIndex, const std::vector<size_t>& pageSizes) {
