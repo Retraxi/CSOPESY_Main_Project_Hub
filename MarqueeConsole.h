@@ -2,6 +2,9 @@
 #include "AConsole.h"
 #include <Windows.h>
 #include <vector>
+#include <string>
+#ifndef MARQUEECONSOLE_H
+#define MARQUEECONSOLE_H
 
 class MarqueeConsole : public AConsole
 {
@@ -20,27 +23,21 @@ public:
 	void process() override;
 	void display() override;
 	
-	MarqueeConsole();
+	MarqueeConsole(int refreshRate);
 	~MarqueeConsole() = default;
+        void run;
+        void stop();
 
 private:
-	bool isRunning = false;
-	bool isThreaded = true;
+	void draw();
+	void processCommand();
 
-	int width = 100;
-	int height = 20;
-	int refreshRate = 40;
-	int pollingRate = 40;
+	bool stopFlag = true;
+	int refreshRate;
+	int interval;
 
-	int x = 0;
-	int y = 3;
-	int dx = 1;
-	int dy = 1;
-
-
-	String marqueeText = "Hello World in Marquee Text!";
-	std::vector<String> processedCommands;
-	String currentInput;
-
-	HANDLE marqueeHandle = nullptr;
+	std::string input = "";
+	std::string previous = "";
 };
+
+#endif // !MARQUEECONSOLE_H
