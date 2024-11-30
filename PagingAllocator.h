@@ -1,34 +1,42 @@
+
 #pragma once
-#include "IMemoryAllocator.h"
-#include "Process.h"
-#include <unordered_map>
+#ifndef PAGINGALLOCATOR_H
+#define PAGINGALLOCATOR_H
+
 #include <queue>
+#include <unordered_map>
+#include <memory>
 #include <vector>
-#include <fstream>
+#include <string>
+#include "Process.h"
 
-class PagingAllocator : public IMemoryAllocator {
+class PagingAllocator {
 public:
-    PagingAllocator(size_t maxMemory);
-    ~PagingAllocator();
+    explicit PagingAllocator(int maxMemory);
+    ~PagingAllocator() = default;
 
-    void* allocate(std::shared_ptr<Process> process) override;
-    void deallocate(std::shared_ptr<Process> process) override;
-    void visualizeMemory() override;
-    void vmstat() const override;
+    bool allocateMemory(std::shared_ptr<Process> process);
+    void freeMemory(std::shared_ptr<Process> process);
+
+    void displayMemoryStatus() const;
+    void visualizeMemory() const;
+    void displayStatistics() const;
 
 private:
-    size_t maxMemory;
-    std::vector<size_t> freeFrameList;
-    std::unordered_map<size_t, std::shared_ptr<Process>> frameMap;
-    std::queue<std::shared_ptr<Process>> processQueue;
-    std::ofstream backingStore;
+    int maxMemory;
+    int pagesPagedIn;
+    int pagesPagedOut;
 
-    // VMStat related fields
-    size_t pagesAllocated = 0;
-    size_t pagesDeallocated = 0;
+    std::queue<int> freeFrames;
+    std::unordered_map<std::string, std::vector<int>> pageTable;
 
-    // Helper functions
-    bool allocateFrames(std::shared_ptr<Process> process, size_t numFrames);
-    void deallocateFrames(std::shared_ptr<Process> process);
-    void manageBackingStore(std::shared_ptr<Process> process, bool save = true);
+    void initializeFreeFrames();
+    void allocateNewFrames(std::shared_ptr<Process> process, int requiredPages);
+    void restoreFrames(std::shared_ptr<Process> process);
+    void releaseFrames(std::shared_ptr<Process> process);
+    int calculateFreeMemory() const;
+
+    static constexpr int PAGE_SIZE = 4; 
 };
+
+#endif 

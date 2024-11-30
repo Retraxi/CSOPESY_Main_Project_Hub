@@ -1,98 +1,114 @@
+
 #include "PagingAllocator.h"
+#include "Process.h"
+#include "Scheduler.h"
 #include <iostream>
-#include <fstream>
-#include <algorithm>
 #include <iomanip>
+#include <fstream>
+#include <queue>
+#include <unordered_map>
+#include <vector>
+#include <ctime>
 
-// Constructor
-PagingAllocator::PagingAllocator(size_t maxMemory) : maxMemory(maxMemory), allocatedSize(0) {
-    numFrames = maxMemory / PAGE_SIZE;
-    freeFrameList.resize(numFrames);
-    std::iota(freeFrameList.begin(), freeFrameList.end(), 0);  // Initialize free frame list
-    // Initialize backing store
-    backingStore.open(".pagefile", std::ios::binary | std::ios::trunc);
-    backingStore.close();
-}
-
-// Destructor
-PagingAllocator::~PagingAllocator() {
-    if (backingStore.is_open()) {
-        backingStore.close();
+class PagingAllocator {
+public:
+    explicit PagingAllocator(int maxMemory) : maxMemory(maxMemory), pagesPagedIn(0), pagesPagedOut(0) {
+        std::ofstream(".pagefile", std::ios::trunc).close();
+        initializeFreeFrames();
     }
-}
 
-// Allocate memory
-void* PagingAllocator::allocate(std::shared_ptr<Process> process) {
-    size_t numFramesNeeded = process->getMemorySize() / PAGE_SIZE;
-    if (numFramesNeeded <= freeFrameList.size() && process->getFrameIndices().empty()) {
-        processOrder.push(process);  // Track process for potential eviction
-        size_t frameIndex = allocateFrames(numFramesNeeded, process->getProcessID());
-        return reinterpret_cast<void*>(frameIndex);
-    } else {
-        if (freeFrameList.size() < numFramesNeeded) {
-            evictOldestProcess();
-            return allocate(process);  // Retry allocation after eviction
+    bool allocateMemory(std::shared_ptr<Process> process) {
+        int requiredPages = process->getRequiredPages();
+        if (pageTable.count(process->getName())) {
+            restoreFrames(process);
+            return true;
+        }
+        else if (freeFrames.size() >= requiredPages) {
+            allocateNewFrames(process, requiredPages);
+            return true;
+        }
+        return false;
+    }
+
+    void freeMemory(std::shared_ptr<Process> process) {
+        if (pageTable.count(process->getName())) {
+            releaseFrames(process);
+            pageTable.erase(process->getName());
         }
     }
-    return nullptr;  // Allocation failed if no frames available
-}
 
-// Deallocate memory
-void PagingAllocator::deallocate(std::shared_ptr<Process> process) {
-    deallocateFrames(process);
-}
-
-// Allocate frames to process
-size_t PagingAllocator::allocateFrames(size_t numFrames, size_t processID) {
-    size_t frameIndex = freeFrameList.back();
-    freeFrameList.pop_back();
-    for (size_t i = 0; i < numFrames; i++) {
-        frameMap[frameIndex + i] = processID;
-        pagesAllocated++;
+    void displayMemoryStatus() const {
+        std::cout << "Memory Status:\n"
+            << "Processes in Memory: " << pageTable.size() << "\n"
+            << "Free Memory: " << calculateFreeMemory() << " KB\n"
+            << "Pages Paged In: " << pagesPagedIn << "\n"
+            << "Pages Paged Out: " << pagesPagedOut << "\n";
     }
-    return frameIndex;
-}
 
-// Deallocate frames
-void PagingAllocator::deallocateFrames(std::shared_ptr<Process> process) {
-    auto& frames = process->getFrameIndices();
-    for (auto frame : frames) {
-        frameMap.erase(frame);
-        freeFrameList.push_back(frame);
-        pagesDeallocated++;
-    }
-    frames.clear();
-}
-
-// Evict the oldest process not currently running
-void PagingAllocator::evictOldestProcess() {
-    if (!processOrder.empty()) {
-        auto oldestProcess = processOrder.front();
-        if (oldestProcess->getCoreID() == -1) {  // Check if process is not running
-            deallocate(oldestProcess);
-            processOrder.pop();
+    void visualizeMemory() const {
+        for (const auto& [process, frames] : pageTable) {
+            std::cout << "Process: " << process << " - Frames: ";
+            for (int frame : frames) {
+                std::cout << frame << " ";
+            }
+            std::cout << "\n";
         }
     }
-}
 
-// Visualize the current state of memory
-void PagingAllocator::visualizeMemory() {
-    for (size_t frameIndex = 0; frameIndex < numFrames; ++frameIndex) {
-        auto it = frameMap.find(frameIndex);
-        if (it != frameMap.end()) {
-            std::cout << "Frame " << frameIndex << " -> Process " << it->second << std::endl;
-        } else {
-            std::cout << "Frame " << frameIndex << " Free" << std::endl;
+    void displayStatistics() const {
+        std::cout << "Paging Statistics:\n"
+            << "Paged In: " << pagesPagedIn << "\n"
+            << "Paged Out: " << pagesPagedOut << "\n";
+    }
+
+
+private:
+    int maxMemory;
+    int pagesPagedIn;
+    int pagesPagedOut;
+    std::queue<int> freeFrames;
+    std::unordered_map<std::string, std::vector<int>> pageTable;
+
+    void initializeFreeFrames() {
+        int totalFrames = maxMemory / PAGE_SIZE;
+        for (int i = 0; i < totalFrames; ++i) {
+            freeFrames.push(i);
         }
     }
-}
 
-// VMStat: Report virtual memory statistics
-void PagingAllocator::vmstat() const {
-    std::cout << "VM Statistics:\n"
-              << "Total Memory: " << maxMemory << " bytes\n"
-              << "Pages Allocated: " << pagesAllocated << "\n"
-              << "Pages Deallocated: " << pagesDeallocated << "\n"
-              << "Allocated Memory: " << pagesAllocated * PAGE_SIZE << " bytes\n"
-              << "Free Memory: " << freeFrameList.size() * PAGE_SIZE << " bytes\n";
-}
+    void allocateNewFrames(std::shared_ptr<Process> process, int requiredPages) {
+        std::vector<int> allocatedFrames;
+        for (int i = 0; i < requiredPages; ++i) {
+            int frame = freeFrames.front();
+            freeFrames.pop();
+            allocatedFrames.push_back(frame);
+            ++pagesPagedIn;
+        }
+        pageTable[process->getName()] = allocatedFrames;
+    }
+
+    void restoreFrames(std::shared_ptr<Process> process) {
+        auto& frames = pageTable[process->getName()];
+        for (int& frame : frames) {
+            if (frame < 0) {
+                frame = freeFrames.front();
+                freeFrames.pop();
+                ++pagesPagedIn;
+            }
+        }
+    }
+
+    void releaseFrames(std::shared_ptr<Process> process) {
+        auto& frames = pageTable[process->getName()];
+        for (int frame : frames) {
+            freeFrames.push(frame);
+            ++pagesPagedOut;
+        }
+    }
+
+    int calculateFreeMemory() const {
+        return freeFrames.size() * PAGE_SIZE;
+    }
+
+    static constexpr int PAGE_SIZE = 4; // 4 KB per frame
+};
