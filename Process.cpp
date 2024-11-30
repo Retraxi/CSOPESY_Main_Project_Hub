@@ -1,9 +1,15 @@
-//#define _CRT_SECURE_NO_WARNINGS
 #include "Process.h"
 #include <iostream>
 #include <iomanip>
-#include <cmath> // For std::ceil
-#include <utility> // For std::move
+#include <cmath>
+#include <utility>
+#include <ctime>
+
+// Helper function to calculate number of pages needed based on memory size and page size
+constexpr size_t pageSize = 4096;  // Define the page size once, used throughout
+size_t calculateNumPages(size_t memorySize) {
+    return (memorySize + pageSize - 1) / pageSize;  // Using ceil logic without cmath
+}
 
 // Constructor for processes without memory size
 Process::Process(int pid, std::string name)
@@ -11,9 +17,8 @@ Process::Process(int pid, std::string name)
     std::time_t now = std::time(nullptr);
     createdAt = std::localtime(&now);
     finishedAt = nullptr;
-
     std::cout << "Process Created: ID=" << pid << ", Name=" << processName
-        << ", No Memory Size Allocated.\n";
+              << ", No Memory Size Allocated.\n";
 }
 
 // Constructor for processes with memory size
@@ -22,17 +27,18 @@ Process::Process(int pid, std::string name, size_t memorySize)
     std::time_t now = std::time(nullptr);
     createdAt = std::localtime(&now);
     finishedAt = nullptr;
-
     std::cout << "Process Created: ID=" << pid << ", Name=" << processName
-        << ", Memory Size=" << memorySize << " bytes (" << getNumPages() << " pages).\n";
+              << ", Memory Size=" << memorySize << " bytes (" << calculateNumPages(memorySize) << " pages).\n";
 }
 
 // Getters
 std::string Process::getName() const {
+    std::lock_guard<std::mutex> lock(mtx);
     return processName;
 }
 
 int Process::getCoreID() const {
+    std::lock_guard<std::mutex> lock(mtx);
     return coreID;
 }
 
@@ -41,18 +47,22 @@ int Process::getProcessID() const {
 }
 
 int Process::getTotalInstructionLines() const {
+    std::lock_guard<std::mutex> lock(mtx);
     return instructionList.size();
 }
 
 int Process::getCurrentInstructionLines() const {
+    std::lock_guard<std::mutex> lock(mtx);
     return currentInstructionLine;
 }
 
 int Process::getCommandCounter() const {
+    std::lock_guard<std::mutex> lock(mtx);
     return commandCounter;
 }
 
 void Process::setMemorySize(size_t memorySize) {
+    std::lock_guard<std::mutex> lock(mtx);
     this->memorySize = memorySize;
 }
 
@@ -61,35 +71,28 @@ size_t Process::getMemorySize() const {
 }
 
 size_t Process::getNumPages() const {
-    //
+    return calculateNumPages(memorySize);
 }
 
 // Time-related methods
-tm* Process::getCreatedAt() {
+std::tm* Process::getCreatedAt() const {
     return createdAt;
 }
 
-tm* Process::getFinishedAt() {
+std::tm* Process::getFinishedAt() const {
     return finishedAt;
 }
 
-void Process::setFinishedAt(tm* finishedAt) {
+void Process::setFinishedAt(std::tm* finishedAt) {
     std::lock_guard<std::mutex> lock(mtx);
     this->finishedAt = finishedAt;
     std::cout << "Process ID=" << pid << " marked as finished at "
-        << std::put_time(finishedAt, "%c") << ".\n";
+              << std::put_time(finishedAt, "%c") << ".\n";
 }
 
-// Methods for instructions
-void Process::testInitFCFS() {
-    std::string instruction = "Test instruction from " + processName;
-    for (size_t i = 0; i < 100; i++) {
-        instructionList.push_back(instruction);
-    }
-    std::cout << "Process ID=" << pid << ": Initialized with 100 test instructions.\n";
-}
-
+// Instruction-related methods
 void Process::setInstruction(int totalCount) {
+    std::lock_guard<std::mutex> lock(mtx);
     std::string instruction = "Instruction from " + processName;
     for (int i = 0; i < totalCount; i++) {
         instructionList.push_back(instruction);
@@ -97,53 +100,35 @@ void Process::setInstruction(int totalCount) {
     std::cout << "Process ID=" << pid << ": Initialized with " << totalCount << " instructions.\n";
 }
 
-// Check if the process is done executing
-bool Process::isDone() {
-    if (currentInstructionLine >= instructionList.size()) {
-        std::time_t now = std::time(nullptr);
-        setFinishedAt(std::localtime(&now));
-        std::cout << "Process ID=" << pid << " has completed execution.\n";
-        return true;
-    }
-    return false;
-}
-
-// Set the core ID for the process
-void Process::setCoreID(int coreID) {
+bool Process::isDone() const {
     std::lock_guard<std::mutex> lock(mtx);
-    this->coreID = coreID;
-    std::cout << "Process ID=" << pid << " assigned to Core ID=" << coreID << ".\n";
+    return currentInstructionLine >= instructionList.size();
 }
 
-// Simulate process execution
 void Process::execute() {
-    std::time_t now = std::time(nullptr);
-    int dummy = 0; // Simulated workload
-
+    std::lock_guard<std::mutex> lock(mtx);
     if (!isDone()) {
         std::cout << "Process ID=" << pid << " executing instruction " << currentInstructionLine + 1
-            << "/" << instructionList.size() << ".\n";
-
-        // Simulate processing delay
-        for (size_t i = 0; i < 10000; i++) {
-            dummy += 1;
-        }
-
+                  << "/" << instructionList.size() << ".\n";
+        // Simulated workload
+        for (size_t i = 0; i < 10000; i++) {}  // Simulating a delay
         currentInstructionLine++;
-
         if (isDone()) {
+            std::time_t now = std::time(nullptr);
+            setFinishedAt(std::localtime(&now));
             std::cout << "Process ID=" << pid << " has finished executing all instructions.\n";
         }
-    }
-    else {
+    } else {
         std::cout << "Process ID=" << pid << " is already completed.\n";
     }
 }
 
-void Process::setFrameIndices(std::vector<size_t> frameIndices) {
-    this->frameIndices = frameIndices;
+void Process::setFrameIndices(const std::vector<size_t>& indices) {
+    std::lock_guard<std::mutex> lock(mtx);
+    frameIndices = indices;
 }
 
-std::vector<size_t> Process::getFrameIndices() {
+std::vector<size_t> Process::getFrameIndices() const {
+    std::lock_guard<std::mutex> lock(mtx);
     return frameIndices;
 }
