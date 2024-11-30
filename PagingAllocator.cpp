@@ -1,120 +1,98 @@
 #include "PagingAllocator.h"
 #include <iostream>
+#include <fstream>
+#include <algorithm>
+#include <iomanip>
 
-PagingAllocator::PagingAllocator(size_t maxMemory) {
-	this->maxMemory = maxMemory;
+// Constructor
+PagingAllocator::PagingAllocator(size_t maxMemory) : maxMemory(maxMemory), allocatedSize(0) {
+    numFrames = maxMemory / PAGE_SIZE;
+    freeFrameList.resize(numFrames);
+    std::iota(freeFrameList.begin(), freeFrameList.end(), 0);  // Initialize free frame list
+    // Initialize backing store
+    backingStore.open(".pagefile", std::ios::binary | std::ios::trunc);
+    backingStore.close();
 }
 
+// Destructor
 PagingAllocator::~PagingAllocator() {
-	freeFrameList.clear();
+    if (backingStore.is_open()) {
+        backingStore.close();
+    }
 }
 
+// Allocate memory
 void* PagingAllocator::allocate(std::shared_ptr<Process> process) {
-	size_t processId = process->getProcessID();
-	size_t numFramesNeeded = process->getMemorySize() / memPerFrame; //gets the number of frames needed
-	if (numFramesNeeded <= freeFrameList.size() && process->getFrameIndices().empty()) {a
-		//Scenario for entirely new processes
-		//std::cerr << "Memory Allocation failed, not enough free frames. " << std::endl;
-		//If lacking frames -> allocate frames until full
-		processOrder.push(process); //looking for age
-		size_t frameIndex = allocateFrames(numFramesNeeded, processId);
-
-		return reinterpret_cast<void*>(frameIndex); //different from static cast, returns the start address
-	}
-	else {
-		//check if the process is already allocated, e.g. it's been given pages and is coming back from its
-		//last quantum cycle, also check if it's lacking pages compared to last time
-
-		if (!process->getFrameIndices().empty() && numFramesNeeded == process->getFrameIndices().size())
-		{
-			size_t frameIndices = process->getFrameIndices().back();
-			return reinterpret_cast<void*>(frameIndices); //just return the starting memory address for that process
-		}
-
-		//FIFO when the freeFrames are not enough
-		if (freeFrameList.size() < numFramesNeeded) {
-			//find the oldest process, implementation will consider whether process is running
-			for (size_t i = 0; i < processOrder.size(); i++)
-			{
-				std::shared_ptr<Process> oldestProcess = processOrder[i];
-
-				if (oldestProcess->getCoreID() == -1) {
-					//process is not running essentially
-					//backing store statement
-
-					deallocate(oldestProcess);
-
-					return allocate(process); //new process gets allocated
-				}
-			}
-
-			//if none
-			return nullptr;
-
-		}
-
-		processOrder.push(process);
-
-		size_t frameIndex = allocateFrames(numFramesNeeded, processId);
-		return reinterpret_cast<void*>(frameIndex); //different from static cast	
-	}
+    size_t numFramesNeeded = process->getMemorySize() / PAGE_SIZE;
+    if (numFramesNeeded <= freeFrameList.size() && process->getFrameIndices().empty()) {
+        processOrder.push(process);  // Track process for potential eviction
+        size_t frameIndex = allocateFrames(numFramesNeeded, process->getProcessID());
+        return reinterpret_cast<void*>(frameIndex);
+    } else {
+        if (freeFrameList.size() < numFramesNeeded) {
+            evictOldestProcess();
+            return allocate(process);  // Retry allocation after eviction
+        }
+    }
+    return nullptr;  // Allocation failed if no frames available
 }
 
+// Deallocate memory
 void PagingAllocator::deallocate(std::shared_ptr<Process> process) {
-	size_t processId = process->getProcessID();	
-
-	//iterate through frameMap and find the places where the 2nd entry of the pair is equivalent to the processID
-	auto it = std::find_if(frameMap.begin(), frameMap.end(), 
-		[processId](const auto& entry) {return entry.second == processId; });
-
-	while (it != frameMap.end()) {
-		size_t frameIndex = it->first;
-		deallocateFrames(1, frameIndex); 
-		//find the next
-		it = std::find_if(frameMap.begin(), frameMap.end(),
-			[processId](const auto& entry) {return entry.second == processId; });
-	}
+    deallocateFrames(process);
 }
 
+// Allocate frames to process
 size_t PagingAllocator::allocateFrames(size_t numFrames, size_t processID) {
-	size_t frameIndex = freeFrameList.back();
-	freeFrameList.pop_back();
-
-	for (size_t i = 0; i < numFrames; i++)
-	{
-		frameMap[frameIndex + i] = processID;
-		allocatedSize += memPerFrame;
-		pagesAllocated++; //vmstat
-	}
-
-	return frameIndex;
+    size_t frameIndex = freeFrameList.back();
+    freeFrameList.pop_back();
+    for (size_t i = 0; i < numFrames; i++) {
+        frameMap[frameIndex + i] = processID;
+        pagesAllocated++;
+    }
+    return frameIndex;
 }
 
-void PagingAllocator::deallocateFrames (size_t numFrames, size_t frameIndex) {
-	for (size_t i = 0; i < numFrames; i++)
-	{
-		frameMap.erase(frameIndex + i);
-	}
-	
-	for (size_t i = 0; i < numFrames; i++)
-	{
-		freeFrameList.push_back(frameIndex + i);
-		pagesDeallocated++; //vmstat
-		allocatedSize -= memPerFrame;
-	}
+// Deallocate frames
+void PagingAllocator::deallocateFrames(std::shared_ptr<Process> process) {
+    auto& frames = process->getFrameIndices();
+    for (auto frame : frames) {
+        frameMap.erase(frame);
+        freeFrameList.push_back(frame);
+        pagesDeallocated++;
+    }
+    frames.clear();
 }
 
+// Evict the oldest process not currently running
+void PagingAllocator::evictOldestProcess() {
+    if (!processOrder.empty()) {
+        auto oldestProcess = processOrder.front();
+        if (oldestProcess->getCoreID() == -1) {  // Check if process is not running
+            deallocate(oldestProcess);
+            processOrder.pop();
+        }
+    }
+}
+
+// Visualize the current state of memory
 void PagingAllocator::visualizeMemory() {
-	for (size_t frameIndex = 0; frameIndex < numFrames; frameIndex++)
-	{
-		auto it = frameMap.find(frameIndex);
+    for (size_t frameIndex = 0; frameIndex < numFrames; ++frameIndex) {
+        auto it = frameMap.find(frameIndex);
+        if (it != frameMap.end()) {
+            std::cout << "Frame " << frameIndex << " -> Process " << it->second << std::endl;
+        } else {
+            std::cout << "Frame " << frameIndex << " Free" << std::endl;
+        }
+    }
+}
 
-		if (it != frameMap.end())
-		{
-			std::cout << "Frame " << frameIndex << " -> Process" << it->second << std::endl;
-		}
-		else {
-			std::cout << "Frame " << frameIndex << " Free" << std::endl;
-		}
-	}
+// VMStat: Report virtual memory statistics
+void PagingAllocator::vmstat() const {
+    std::cout << "VM Statistics:\n"
+              << "Total Memory: " << maxMemory << " bytes\n"
+              << "Pages Allocated: " << pagesAllocated << "\n"
+              << "Pages Deallocated: " << pagesDeallocated << "\n"
+              << "Allocated Memory: " << pagesAllocated * PAGE_SIZE << " bytes\n"
+              << "Free Memory: " << freeFrameList.size() * PAGE_SIZE << " bytes\n";
 }
