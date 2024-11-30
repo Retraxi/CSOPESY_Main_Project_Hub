@@ -286,7 +286,7 @@ void CPUScheduler::RRScheduler(int quantumCycle)
 
 				// Attempt to allocate memory for the process
 				// New code added to handle memory allocation
-				if (!memoryManager.allocateMemory(nextProcess->getName())) {
+				if (pagingAlloc->allocate(nextProcess) != nullptr) {
 					// If allocation fails, requeue the process
 					this->unfinishedQueue.push(nextProcess);
 					continue; // Skip this cycle if allocation fails
@@ -306,7 +306,7 @@ void CPUScheduler::RRScheduler(int quantumCycle)
 		for (size_t i = 0; i < cpuCores.size(); i++) {
 			if (cpuCores[i]->getProcess() != nullptr && cpuCores[i]->getProcess()->isDone()) {
 				// Free memory for completed process
-				memoryManager.deallocateMemory(cpuCores[i]->getProcess()->getName());
+				pagingAlloc->deallocate(cpuCores[i]->getProcess());
 				cpuCores[i]->setProcess(nullptr);
 				cpuCores[i]->setReady(true);
 			}
@@ -323,7 +323,7 @@ void CPUScheduler::RRScheduler(int quantumCycle)
 		// Save memory snapshot every 4 quantum-cycles
 		// New code added to handle periodic memory snapshot
 		if (cycleCount % 4 == 0) {
-			memoryManager.saveMemorySnapshot(quantumCycle);
+			//memoryManager.saveMemorySnapshot(quantumCycle);
 		}
 	}
 }
@@ -392,11 +392,11 @@ void CPUScheduler::reportUtilization() {
     printCoreInfo();
 
     // Report Memory Utilization and Fragmentation
-    double memoryUtilization = memoryManager.getMemoryUtilization();
-    double externalFragmentation = memoryManager.getExternalFragmentation();
+    //double memoryUtilization = memoryManager.getMemoryUtilization();
+    //double externalFragmentation = memoryManager.getExternalFragmentation();
 
-    std::cout << "Memory Utilization: " << memoryUtilization << "%" << std::endl;
-    std::cout << "External Fragmentation: " << externalFragmentation << " bytes" << std::endl;
+    //std::cout << "Memory Utilization: " << memoryUtilization << "%" << std::endl;
+    //std::cout << "External Fragmentation: " << externalFragmentation << " bytes" << std::endl;
 
   
 }

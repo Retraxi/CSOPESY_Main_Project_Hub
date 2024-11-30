@@ -16,6 +16,7 @@ private:
 	size_t maxMemory;
 	size_t numFrames;
 	size_t memPerFrame;
+	size_t allocatedSize; //vmstat
 	std::unordered_map<size_t, size_t> frameMap; 
 	std::vector<size_t> freeFrameList; //list of free frames
 	std::queue<std::shared_ptr<Process>> processOrder;
@@ -24,6 +25,7 @@ private:
 	int pagesDeallocated = 0;
 
 	//FIFO Implementation
+	void evictOldestPage9();
 
 	size_t allocateFrames(size_t numFrames, size_t processID);
 	void deallocateFrames(size_t numFrames, size_t frameIndex);

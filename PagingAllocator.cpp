@@ -5,6 +5,10 @@ PagingAllocator::PagingAllocator(size_t maxMemory) {
 	this->maxMemory = maxMemory;
 }
 
+PagingAllocator::~PagingAllocator() {
+	freeFrameList.clear();
+}
+
 void* PagingAllocator::allocate(std::shared_ptr<Process> process) {
 	size_t processId = process->getProcessID();
 	size_t numFramesNeeded = process->getMemorySize() / memPerFrame; //gets the number of frames needed
@@ -12,10 +16,10 @@ void* PagingAllocator::allocate(std::shared_ptr<Process> process) {
 		//Scenario for entirely new processes
 		//std::cerr << "Memory Allocation failed, not enough free frames. " << std::endl;
 		//If lacking frames -> allocate frames until full
-		processOrder.push(process);
+		processOrder.push(process); //looking for age
 		size_t frameIndex = allocateFrames(numFramesNeeded, processId);
 
-		return reinterpret_cast<void*>(frameIndex); //different from static cast
+		return reinterpret_cast<void*>(frameIndex); //different from static cast, returns the start address
 	}
 	else {
 		//check if the process is already allocated, e.g. it's been given pages and is coming back from its
@@ -23,10 +27,32 @@ void* PagingAllocator::allocate(std::shared_ptr<Process> process) {
 
 		if (!process->getFrameIndices().empty() && numFramesNeeded == process->getFrameIndices().size())
 		{
-			//if allocated and not lacking then do nothing
+			size_t frameIndices = process->getFrameIndices().back();
+			return reinterpret_cast<void*>(frameIndices); //just return the starting memory address for that process
 		}
 
-		//add in the process and take note of its age
+		//FIFO when the freeFrames are not enough
+		if (freeFrameList.size() < numFramesNeeded) {
+			//find the oldest process, implementation will consider whether process is running
+			for (size_t i = 0; i < processOrder.size(); i++)
+			{
+				std::shared_ptr<Process> oldestProcess = processOrder[i];
+
+				if (oldestProcess->getCoreID() == -1) {
+					//process is not running essentially
+					//backing store statement
+
+					deallocate(oldestProcess);
+
+					return allocate(process); //new process gets allocated
+				}
+			}
+
+			//if none
+			return nullptr;
+
+		}
+
 		processOrder.push(process);
 
 		size_t frameIndex = allocateFrames(numFramesNeeded, processId);
@@ -57,6 +83,8 @@ size_t PagingAllocator::allocateFrames(size_t numFrames, size_t processID) {
 	for (size_t i = 0; i < numFrames; i++)
 	{
 		frameMap[frameIndex + i] = processID;
+		allocatedSize += memPerFrame;
+		pagesAllocated++; //vmstat
 	}
 
 	return frameIndex;
@@ -71,6 +99,8 @@ void PagingAllocator::deallocateFrames (size_t numFrames, size_t frameIndex) {
 	for (size_t i = 0; i < numFrames; i++)
 	{
 		freeFrameList.push_back(frameIndex + i);
+		pagesDeallocated++; //vmstat
+		allocatedSize -= memPerFrame;
 	}
 }
 
