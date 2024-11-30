@@ -12,7 +12,7 @@ PagingAllocator::~PagingAllocator() {
 void* PagingAllocator::allocate(std::shared_ptr<Process> process) {
 	size_t processId = process->getProcessID();
 	size_t numFramesNeeded = process->getMemorySize() / memPerFrame; //gets the number of frames needed
-	if (numFramesNeeded <= freeFrameList.size() && process->getFrameIndices().empty()) {
+	if (numFramesNeeded <= freeFrameList.size() && process->getFrameIndices().empty()) {a
 		//Scenario for entirely new processes
 		//std::cerr << "Memory Allocation failed, not enough free frames. " << std::endl;
 		//If lacking frames -> allocate frames until full
