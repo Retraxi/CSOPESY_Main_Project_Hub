@@ -11,28 +11,29 @@ public:
 	typedef std::string String;
 	AConsole(String name);
 	~AConsole() = default;
-        bool isActive() { return this->_active; }
-        bool canRemove() { return this->_canRemove; };
-        virtual void run();
-        virtual void stop();
+        bool isConsoleActive() { return this->_active; }
+        bool isRemovable() { return this->removable; };
+        virtual void start();
+        virtual void terminate();
 
 
 
+protected:
+    virtual void render();
+    void moveCursorTo(short row, short col);
+    void drawHorizontalBorder(short row, short col, short length, bool doubleLine = false);
+    void drawVerticalBorder(short row, short col, short length);
+    void writeTextAt(short row, short col, const String& text, short length = -1, bool alignRight = false);
+    void decorateCorners(short topRow, short leftCol, short width, short height);
+    void drawRectangle(short topRow, short leftCol, short width, short height, bool doubleLine = false);
+    std::tuple<short, short> fetchConsoleSize() const;
 
-
-    protected:
-    virtual void draw();
-    void SetCursorPosition(short row, short col);
-    void DrawHorizontalLine(short row, short col, short length, bool two = false);
-    void DrawVerticalLine(short row, short col, short length);
-    void PrintAtCoords(short row, short col, std::string string, short length = -1, bool right = false);
-    void FillCorners(short topRow, short leftCol, short width, short height);
-    void DrawBox(short topRow, short leftCol, short width, short height, bool two = false);
-    std::tuple<short, short> getWindowSize();
-    std::string _name;
-
-    bool _active = false;
-    bool _canRemove = false;
+    String consoleName;
+    bool active = false;
+    bool removable = false;
 };
 
-#endif // !ACONSOLE_H
+#endif  // !ACONSOLE_H
+
+
+
