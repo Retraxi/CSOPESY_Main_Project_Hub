@@ -1,42 +1,30 @@
-
 #pragma once
 #ifndef PAGINGALLOCATOR_H
 #define PAGINGALLOCATOR_H
 
+#include "IAllocator.h"
 #include <queue>
 #include <unordered_map>
-#include <memory>
-#include <vector>
-#include <string>
-#include "Process.h"
 
-class PagingAllocator {
+class PagingAllocator : public IAllocator {
 public:
-    explicit PagingAllocator(int maxMemory);
+    PagingAllocator(int maxMemory);
     ~PagingAllocator() = default;
 
-    bool allocateMemory(std::shared_ptr<Process> process);
-    void freeMemory(std::shared_ptr<Process> process);
+    bool allocate(std::shared_ptr<Process> process) override;
+    void deallocate(std::shared_ptr<Process> process) override;
 
-    void displayMemoryStatus() const;
-    void visualizeMemory() const;
-    void displayStatistics() const;
+    void printMem() override;
+    void printProcesses() override;
+    void vmstat() override;
 
 private:
-    int maxMemory;
-    int pagesPagedIn;
-    int pagesPagedOut;
-
-    std::queue<int> freeFrames;
-    std::unordered_map<std::string, std::vector<int>> pageTable;
-
-    void initializeFreeFrames();
-    void allocateNewFrames(std::shared_ptr<Process> process, int requiredPages);
-    void restoreFrames(std::shared_ptr<Process> process);
-    void releaseFrames(std::shared_ptr<Process> process);
-    int calculateFreeMemory() const;
-
-    static constexpr int PAGE_SIZE = 4; 
+    std::queue<int> _freeFrameList;
+    // procName > vector(page number)[frame]
+    std::unordered_map <std::string, std::vector<int>> _pageTable;
+    int _maxMemory;
+    int _pagedIn = 0;
+    int _pagedOut = 0;
 };
 
-#endif 
+#endif //!PAGINGALLOCATOR_H
