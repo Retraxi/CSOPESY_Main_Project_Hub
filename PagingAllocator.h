@@ -3,30 +3,32 @@
 #include "Process.h"
 #include <unordered_map>
 #include <queue>
+#include <vector>
+#include <fstream>
+
 class PagingAllocator : public IMemoryAllocator {
 public:
-	PagingAllocator(size_t maxMemory);
-	~PagingAllocator() = default;
+    PagingAllocator(size_t maxMemory);
+    ~PagingAllocator();
 
-	void* allocate(std::shared_ptr<Process> process) override;
-	void deallocate(std::shared_ptr<Process> process) override;
-	void visualizeMemory() override;
+    void* allocate(std::shared_ptr<Process> process) override;
+    void deallocate(std::shared_ptr<Process> process) override;
+    void visualizeMemory() override;
+    void vmstat() const override;
 
 private:
-	size_t maxMemory;
-	size_t numFrames;
-	size_t memPerFrame;
-	size_t allocatedSize; //vmstat
-	std::unordered_map<size_t, size_t> frameMap; 
-	std::vector<size_t> freeFrameList; //list of free frames
-	std::queue<std::shared_ptr<Process>> processOrder;
+    size_t maxMemory;
+    std::vector<size_t> freeFrameList;
+    std::unordered_map<size_t, std::shared_ptr<Process>> frameMap;
+    std::queue<std::shared_ptr<Process>> processQueue;
+    std::ofstream backingStore;
 
-	int pagesAllocated = 0;
-	int pagesDeallocated = 0;
+    // VMStat related fields
+    size_t pagesAllocated = 0;
+    size_t pagesDeallocated = 0;
 
-	//FIFO Implementation
-	void evictOldestPage9();
-
-	size_t allocateFrames(size_t numFrames, size_t processID);
-	void deallocateFrames(size_t numFrames, size_t frameIndex);
+    // Helper functions
+    bool allocateFrames(std::shared_ptr<Process> process, size_t numFrames);
+    void deallocateFrames(std::shared_ptr<Process> process);
+    void manageBackingStore(std::shared_ptr<Process> process, bool save = true);
 };
