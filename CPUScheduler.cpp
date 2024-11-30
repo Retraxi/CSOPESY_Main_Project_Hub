@@ -36,10 +36,9 @@ void CPUScheduler::initialize(int cpuNum, std::string schedulerType,
 	unsigned int quantumCycles, unsigned int batchProcessFreq,
 	unsigned int minIns, unsigned int maxIns,
 	unsigned int execDelay, int maxMemory,
-	int minMPP, int maxMPP)
+	int minMPP, int maxMPP, int memPerFrame) // Add memPerFrame
 {
-	//make the cpulist
-	sharedInstance = new CPUScheduler(); //like in ConsoleManager/
+	sharedInstance = new CPUScheduler();
 	sharedInstance->coresTotal = cpuNum;
 	sharedInstance->quantumCycles = quantumCycles;
 	sharedInstance->batchProcessFrequency = batchProcessFreq;
@@ -51,15 +50,14 @@ void CPUScheduler::initialize(int cpuNum, std::string schedulerType,
 	sharedInstance->minMPP = minMPP;
 	sharedInstance->maxMPP = maxMPP;
 
-	sharedInstance->pagingAlloc = new PagingAllocator(maxMemory);
+	sharedInstance->pagingAlloc = new PagingAllocator(maxMemory, memPerFrame); // Pass memPerFrame
 
-	for (size_t i = 1; i < sharedInstance->coresTotal + 1; i++)
-	{
-		//make a core
-		sharedInstance->cpuCores.push_back(std::make_shared<Core>(i, execDelay)); //0 indexed
+	for (size_t i = 1; i < sharedInstance->coresTotal + 1; i++) {
+		sharedInstance->cpuCores.push_back(std::make_shared<Core>(i, execDelay));
 	}
 	sharedInstance->startScheduler(schedulerType);
 }
+
 
 void CPUScheduler::destroy()
 {

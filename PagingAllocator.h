@@ -5,7 +5,7 @@
 #include <queue>
 class PagingAllocator : public IMemoryAllocator {
 public:
-	PagingAllocator(size_t maxMemory);
+	PagingAllocator(size_t maxMemory, size_t memPerFrame); // Updated constructor
 	~PagingAllocator();
 
 	void* allocate(std::shared_ptr<Process> process) override;

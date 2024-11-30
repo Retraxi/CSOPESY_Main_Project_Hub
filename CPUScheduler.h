@@ -13,7 +13,7 @@ public:
 		unsigned int quantumCycles, unsigned int batchProcessFreq,
 		unsigned int minIns, unsigned int maxIns,
 		unsigned int execDelay, int maxMemory,
-		int minMPP, int maxMPP);
+		int minMPP, int maxMPP, int memPerFrame);
 	static CPUScheduler* getInstance();
 	static void destroy();
 
@@ -59,6 +59,7 @@ private:
 
 	FlatMemoryAllocator* flatmem;
 	PagingAllocator* pagingAlloc;
+	int memPerFrame;
 	int minMPP;
 	int maxMPP;
 

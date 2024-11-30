@@ -11,9 +11,6 @@ Process::Process(int pid, std::string name)
     std::time_t now = std::time(nullptr);
     createdAt = std::localtime(&now);
     finishedAt = nullptr;
-
-    std::cout << "Process Created: ID=" << pid << ", Name=" << processName
-        << ", No Memory Size Allocated.\n";
 }
 
 // Constructor for processes with memory size
@@ -50,8 +47,14 @@ int Process::getCommandCounter() const {
 }
 
 void Process::setMemorySize(size_t memorySize) {
-    this->memorySize = memorySize;
+    if (memorySize <= 0) {
+        this->memorySize = 0;
+    }
+    else {
+        this->memorySize = memorySize;
+    }
 }
+
 
 
 size_t Process::getMemorySize() const {
@@ -69,8 +72,6 @@ tm* Process::getFinishedAt() {
 void Process::setFinishedAt(tm* finishedAt) {
     std::lock_guard<std::mutex> lock(mtx);
     this->finishedAt = finishedAt;
-    std::cout << "Process ID=" << pid << " marked as finished at "
-        << std::put_time(finishedAt, "%c") << ".\n";
 }
 
 // Methods for instructions
@@ -79,7 +80,6 @@ void Process::testInitFCFS() {
     for (size_t i = 0; i < 100; i++) {
         instructionList.push_back(instruction);
     }
-    std::cout << "Process ID=" << pid << ": Initialized with 100 test instructions.\n";
 }
 
 void Process::setInstruction(int totalCount) {
@@ -87,7 +87,6 @@ void Process::setInstruction(int totalCount) {
     for (int i = 0; i < totalCount; i++) {
         instructionList.push_back(instruction);
     }
-    std::cout << "Process ID=" << pid << ": Initialized with " << totalCount << " instructions.\n";
 }
 
 // Check if the process is done executing
@@ -95,7 +94,6 @@ bool Process::isDone() {
     if (currentInstructionLine >= instructionList.size()) {
         std::time_t now = std::time(nullptr);
         setFinishedAt(std::localtime(&now));
-        std::cout << "Process ID=" << pid << " has completed execution.\n";
         return true;
     }
     return false;
@@ -105,7 +103,6 @@ bool Process::isDone() {
 void Process::setCoreID(int coreID) {
     std::lock_guard<std::mutex> lock(mtx);
     this->coreID = coreID;
-    std::cout << "Process ID=" << pid << " assigned to Core ID=" << coreID << ".\n";
 }
 
 // Simulate process execution
@@ -114,8 +111,6 @@ void Process::execute() {
     int dummy = 0; // Simulated workload
 
     if (!isDone()) {
-        std::cout << "Process ID=" << pid << " executing instruction " << currentInstructionLine + 1
-            << "/" << instructionList.size() << ".\n";
 
         // Simulate processing delay
         for (size_t i = 0; i < 10000; i++) {
@@ -125,11 +120,9 @@ void Process::execute() {
         currentInstructionLine++;
 
         if (isDone()) {
-            std::cout << "Process ID=" << pid << " has finished executing all instructions.\n";
         }
     }
     else {
-        std::cout << "Process ID=" << pid << " is already completed.\n";
     }
 }
 

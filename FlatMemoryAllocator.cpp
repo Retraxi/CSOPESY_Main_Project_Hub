@@ -5,37 +5,47 @@
 #include "Process.h"
 
 FlatMemoryAllocator::FlatMemoryAllocator(size_t maxMemory) {
-	this->maximumSize = maxMemory;
-	memory.reserve(maximumSize);
-	initializeMemory();
+    this->maximumSize = maxMemory;
+    memory.resize(maximumSize, '.'); // Initialize memory
+    allocationMap.resize(maximumSize, false); // Initialize allocation map
+    initializeMemory();
 }
 
 FlatMemoryAllocator::~FlatMemoryAllocator() {
 	memory.clear();
 }
 
+// Modified allocate
 void* FlatMemoryAllocator::allocate(std::shared_ptr<Process> process) {
-	size_t processMem = process->getMemorySize();
+    size_t processMem = process->getMemorySize();
 
-	size_t memSize = this->maximumSize - processMem;
-	for (size_t i = 0; i < memSize + 1; i++)
-	{
-		if (!allocationMap[i] && canAllocateAt(i, process->getMemorySize())) {
-			allocateAt(i, process->getMemorySize());
-			return &memory[i];
-		}
-	}
-	//nothing available
-	return nullptr;
+    if (processMem > this->maximumSize) {
+        return nullptr;
+    }
+
+    for (size_t i = 0; i <= this->maximumSize - processMem; i++) {
+        if (!allocationMap[i] && canAllocateAt(i, processMem)) {
+            allocateAt(i, processMem);
+            processMemoryMap[process] = i; // Store index
+            return &memory[i];
+        }
+    }
+
+    return nullptr;
 }
 
+// Modified deallocate
 void FlatMemoryAllocator::deallocate(std::shared_ptr<Process> process) {
-	size_t index = reinterpret_cast<char*>(process->getMemorySize()) - &memory[0];
-	if (allocationMap[index])
-	{
-		deallocateAt(index);
-	}
+    auto it = processMemoryMap.find(process);
+    if (it != processMemoryMap.end()) { // Check if the process exists in the map
+        size_t index = it->second; // Retrieve the stored index
+        if (index < allocationMap.size() && allocationMap[index]) {
+            deallocateAt(index);
+            processMemoryMap.erase(it); // Remove the process from the map
+        }
+    }
 }
+
 
 void FlatMemoryAllocator::visualizeMemory() {
 	 std::cout << std::string(memory.begin(), memory.end()) << std::endl;
