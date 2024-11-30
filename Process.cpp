@@ -53,6 +53,7 @@ void Process::setMemorySize(size_t memorySize) {
     this->memorySize = memorySize;
 }
 
+
 size_t Process::getMemorySize() const {
     return memorySize;
 }
@@ -139,3 +140,5 @@ void Process::setFrameIndices(std::vector<size_t> frameIndices) {
 std::vector<size_t> Process::getFrameIndices() {
     return frameIndices;
 }
+
+std::vector<char> memory;
