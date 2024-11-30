@@ -50,10 +50,10 @@ bool FlatMemoryAllocator::canAllocateAt(size_t index, size_t size) {
 }
 
 void FlatMemoryAllocator::allocateAt(size_t index, size_t size) {
-	auto offset1 = std::next(allocationMap.begin(), index);
-	auto offset2 = std::next(allocationMap.begin(), index + size);
-	std::fill(offset1 , offset2, true);
-	allocatedSize += size;
+    for (size_t i = index; i < index + size; ++i) {
+        allocationMap[i] = true;
+    }
+    allocatedSize += size;
 }
 
 void FlatMemoryAllocator::deallocateAt(size_t index) {
