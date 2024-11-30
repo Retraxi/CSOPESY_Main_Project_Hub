@@ -1,134 +1,91 @@
+
 #include "Process.h"
+#include <fstream>
 #include <iostream>
-#include <iomanip>
-#include <cmath>
-#include <utility>
-#include <ctime>
+#include <memory>
+#include <string>
+#include <mutex>
+#include <random>
+#include "PrintCommand.h"
 
-// Helper function to calculate number of pages needed based on memory size and page size
-constexpr size_t pageSize = 4096;  // Define the page size once, used throughout
-size_t calculateNumPages(size_t memorySize) {
-    return (memorySize + pageSize - 1) / pageSize;  // Using ceil logic without cmath
-}
+typedef std::string String;
 
-// Constructor for processes without memory size
-Process::Process(int pid, std::string name)
-    : pid(pid), processName(std::move(name)), memorySize(0), coreID(-1), currentInstructionLine(0) {
-    std::time_t now = std::time(nullptr);
-    createdAt = std::localtime(&now);
-    finishedAt = nullptr;
-    std::cout << "Process Created: ID=" << pid << ", Name=" << processName
-              << ", No Memory Size Allocated.\n";
-}
+int Process::requiredPages = -1;
+int Process::sameMemory = -1;
 
-// Constructor for processes with memory size
-Process::Process(int pid, std::string name, size_t memorySize)
-    : pid(pid), processName(std::move(name)), memorySize(memorySize), coreID(-1), currentInstructionLine(0) {
-    std::time_t now = std::time(nullptr);
-    createdAt = std::localtime(&now);
-    finishedAt = nullptr;
-    std::cout << "Process Created: ID=" << pid << ", Name=" << processName
-              << ", Memory Size=" << memorySize << " bytes (" << calculateNumPages(memorySize) << " pages).\n";
-}
+Process::Process(String name, std::uniform_int_distribution<int> commandDistr,
+    std::uniform_int_distribution<int> memoryDistr,
+    std::uniform_int_distribution<int> pageDistr) : _name(std::move(name)) {
 
-// Getters
-std::string Process::getName() const {
     std::lock_guard<std::mutex> lock(mtx);
-    return processName;
-}
+    this->_pid = Process::nextID++;
+    std::random_device rand_dev;
+    std::mt19937 generator(rand_dev());
+    int numCommands = commandDistr(generator);
 
-int Process::getCoreID() const {
-    std::lock_guard<std::mutex> lock(mtx);
-    return coreID;
-}
-
-int Process::getProcessID() const {
-    return pid;
-}
-
-int Process::getTotalInstructionLines() const {
-    std::lock_guard<std::mutex> lock(mtx);
-    return instructionList.size();
-}
-
-int Process::getCurrentInstructionLines() const {
-    std::lock_guard<std::mutex> lock(mtx);
-    return currentInstructionLine;
-}
-
-int Process::getCommandCounter() const {
-    std::lock_guard<std::mutex> lock(mtx);
-    return commandCounter;
-}
-
-void Process::setMemorySize(size_t memorySize) {
-    std::lock_guard<std::mutex> lock(mtx);
-    this->memorySize = memorySize;
-}
-
-size_t Process::getMemorySize() const {
-    return memorySize;
-}
-
-size_t Process::getNumPages() const {
-    return calculateNumPages(memorySize);
-}
-
-// Time-related methods
-std::tm* Process::getCreatedAt() const {
-    return createdAt;
-}
-
-std::tm* Process::getFinishedAt() const {
-    return finishedAt;
-}
-
-void Process::setFinishedAt(std::tm* finishedAt) {
-    std::lock_guard<std::mutex> lock(mtx);
-    this->finishedAt = finishedAt;
-    std::cout << "Process ID=" << pid << " marked as finished at "
-              << std::put_time(finishedAt, "%c") << ".\n";
-}
-
-// Instruction-related methods
-void Process::setInstruction(int totalCount) {
-    std::lock_guard<std::mutex> lock(mtx);
-    std::string instruction = "Instruction from " + processName;
-    for (int i = 0; i < totalCount; i++) {
-        instructionList.push_back(instruction);
+    // Generate a list of commands
+    for (int i = 0; i < numCommands; ++i) {
+        this->_commandList.push_back(
+            std::make_shared<PrintCommand>(
+                "Executing from " + this->_name + "!", this->_pid
+            )
+        );
     }
-    std::cout << "Process ID=" << pid << ": Initialized with " << totalCount << " instructions.\n";
-}
 
-bool Process::isDone() const {
-    std::lock_guard<std::mutex> lock(mtx);
-    return currentInstructionLine >= instructionList.size();
+    // Set required memory or use static allocation
+    if (Process::sameMemory == -1) {
+        this->_requiredMemory = calculatePowerOfTwo(memoryDistr(generator));
+    }
+    else {
+        this->_requiredMemory = Process::sameMemory;
+    }
 }
 
 void Process::execute() {
     std::lock_guard<std::mutex> lock(mtx);
-    if (!isDone()) {
-        std::cout << "Process ID=" << pid << " executing instruction " << currentInstructionLine + 1
-                  << "/" << instructionList.size() << ".\n";
-        // Simulated workload
-        for (size_t i = 0; i < 10000; i++) {}  // Simulating a delay
-        currentInstructionLine++;
-        if (isDone()) {
-            std::time_t now = std::time(nullptr);
-            setFinishedAt(std::localtime(&now));
-            std::cout << "Process ID=" << pid << " has finished executing all instructions.\n";
-        }
-    } else {
-        std::cout << "Process ID=" << pid << " is already completed.\n";
+    if (!this->hasFinished()) {
+        this->_commandList.at(_commandCounter)->execute(
+            this->_cpuCoreID, ".\output\" + this->_name + ".txt"
+        );
+        ++this->_commandCounter;
     }
 }
 
-void Process::setFrameIndices(const std::vector<size_t>& indices) {
-    std::lock_guard<std::mutex> lock(mtx);
-    frameIndices = indices;
+bool Process::hasFinished() const {
+    return this->_commandCounter >= this->_commandList.size();
 }
 
-std::vector<size_t> Process::getFrameIndices() const {
-    std::lock_guard<std::mutex> lock(mtx);
-    return frameIndices;
+int Process::setRequiredPages(int min, int max) {
+    if (Process::requiredPages == -1) {
+        std::random_device rand_dev;
+        std::mt19937 generator(rand_dev());
+        std::uniform_int_distribution<int> pageDistr(min, max);
+        Process::requiredPages = calculatePowerOfTwo(pageDistr(generator));
+    }
+    return Process::requiredPages;
 }
+
+int Process::setRequiredMemory(int min, int max) {
+    if (Process::sameMemory == -1) {
+        std::random_device rand_dev;
+        std::mt19937 generator(rand_dev());
+        std::uniform_int_distribution<int> memDistr(min, max);
+        Process::sameMemory = calculatePowerOfTwo(memDistr(generator));
+    }
+    return Process::sameMemory;
+}
+
+void Process::setCPUCoreID(int cpuCoreID) {
+    std::lock_guard<std::mutex> lock(mtx);
+    this->_cpuCoreID = cpuCoreID;
+}
+
+int Process::calculatePowerOfTwo(int value) {
+    int power = 1;
+    while (power < value) {
+        power *= 2;
+    }
+    return power;
+}
+
+int Process::nextID = 0;
