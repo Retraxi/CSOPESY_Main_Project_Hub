@@ -149,26 +149,23 @@ void FlatMemoryAllocator::writeBackingStore(std::shared_ptr<Process> process) {
 }
 
 
-void MemoryManager::printProcesses() {
-    int totalUsed = 0;
-    std::vector<std::string> processMemoryDetails;
+void FlatMemoryAllocator::printProcesses() {
+    std::cout << "Memory Usage: " << allocatedSize << " / " << maximumSize << " bytes\n";
+    std::cout << "Memory Util: " << (static_cast<double>(allocatedSize) / maximumSize) * 100.0 << "%\n\n";
 
-    for (const auto& allocation : this->allocations) {
-        std::string details = allocation.process->getName() + " uses " + 
-                              std::to_string(allocation.size) + " units";
-        processMemoryDetails.push_back(details);
-        totalUsed += allocation.size;
+    // Header for the output
+    std::cout << "Running processes and memory usage:\n";
+    for (int i = 0; i < 48; i++) { std::cout << "="; }
+    std::cout << "\n";
+
+    // Display each process and its memory usage
+    for (const auto& entry : processAllocationMap) {
+        std::shared_ptr<Process> process = std::make_shared<Process>(); // You need to get the actual process object
+        std::cout << "Process ID: " << entry.first << " Memory Used: " << entry.second << " bytes\n";
     }
 
-    double memoryUtilization = (double)totalUsed / this->maxMemory * 100.0;
-
-    std::cout << "Memory Usage: " << totalUsed << " / " << this->maxMemory << std::endl;
-    std::cout << "Memory Utilization: " << memoryUtilization << "%" << std::endl << std::endl;
-
-    std::cout << "Running processes and memory usage:" << std::endl;
-    for (const auto& details : processMemoryDetails) {
-        std::cout << details << std::endl;
-    }
+    for (int i = 0; i < 48; i++) { std::cout << "-"; }
+    std::cout << "\n";
 }
 
 
@@ -188,3 +185,6 @@ void MemoryManager::vmstat() {
               << "Active CPU Ticks: " << activeTicks << "\n"
               << "Total CPU Ticks: " << totalTicks << std::endl;
 }
+
+
+
