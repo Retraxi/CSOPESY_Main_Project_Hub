@@ -1,20 +1,38 @@
 #pragma once
+
 #include <string>
+#include <tuple>
+#include <memory>
+
+
 
 class AConsole {
 public:
 	typedef std::string String;
 	AConsole(String name);
 	~AConsole() = default;
+        bool isActive() { return this->_active; }
+        bool canRemove() { return this->_canRemove; };
+        virtual void run();
+        virtual void stop();
 
-	String getName() const
-	{
-		return this->name;
-	}
-	virtual void onEnabled() = 0;
-	virtual void display() = 0;
-	virtual void process() = 0;
 
-	String name;
-	friend class ConsoleManager;
+
+
+
+    protected:
+    virtual void draw();
+    void SetCursorPosition(short row, short col);
+    void DrawHorizontalLine(short row, short col, short length, bool two = false);
+    void DrawVerticalLine(short row, short col, short length);
+    void PrintAtCoords(short row, short col, std::string string, short length = -1, bool right = false);
+    void FillCorners(short topRow, short leftCol, short width, short height);
+    void DrawBox(short topRow, short leftCol, short width, short height, bool two = false);
+    std::tuple<short, short> getWindowSize();
+    std::string _name;
+
+    bool _active = false;
+    bool _canRemove = false;
 };
+
+#endif // !ACONSOLE_H
