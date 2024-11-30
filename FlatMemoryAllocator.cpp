@@ -65,16 +65,126 @@ void FlatMemoryAllocator::visualizeMemory() {
     std::cout << "\nAllocated Size: " << allocatedSize << " / " << maximumSize << " KB\n";
 }
 
-void FlatMemoryAllocator::vmstat() const {
-    std::cout << "VM Statistics:\n"
-              << "Total Memory: " << maximumSize << " bytes\n"
-              << "Allocated Memory: " << allocatedSize << " bytes\n";
-}
 
 void FlatMemoryAllocator::readBackingStore(std::shared_ptr<Process> process) {
-    // Logic to read from backing store
+    std::ifstream backingStoreFile(".pagefile");
+    if (!backingStoreFile.is_open()) {
+        std::cerr << "Failed to open the file." << std::endl;
+        return;
+    }
+    
+    std::unordered_map<int, std::pair<size_t, size_t>> backingStore;  // Using process ID and size pairs
+    std::string line;
+    int pid;
+    size_t start, length;
+
+    while (std::getline(backingStoreFile, line)) {
+        std::istringstream iss(line);
+        if (iss >> pid >> start >> length) {
+            backingStore[pid] = std::make_pair(start, length);
+        }
+    }
+
+    backingStoreFile.close();
+
+    auto it = backingStore.find(process->getProcessID());
+    if (it != backingStore.end()) {
+        // Load process data into memory or handle as necessary
+        std::cout << "Data for process " << process->getProcessID() << " loaded from disk.\n";
+        backingStore.erase(it);
+    }
+
+    // Assuming the file needs to be updated to remove loaded data
+    std::ofstream saveFile(".pagefile", std::ios::trunc);
+    if (saveFile.is_open()) {
+        for (const auto& pair : backingStore) {
+            saveFile << pair.first << ' ' << pair.second.first << ' ' << pair.second.second << '\n';
+        }
+        saveFile.close();
+    }
 }
 
+
+
+
+
+
+
+
 void FlatMemoryAllocator::writeBackingStore(std::shared_ptr<Process> process) {
-    // Logic to write to backing store
+    std::ifstream backingStoreFile(".pagefile");
+    if (!backingStoreFile.is_open()) {
+        std::cerr << "Failed to open the file for reading." << std::endl;
+        return;
+    }
+
+    // Load existing data into memory
+    std::unordered_map<int, std::pair<size_t, size_t>> backingStore;  // Maps process ID to memory size and command counter
+    std::string line;
+    int pid;
+    size_t memSize, cmdCount;
+
+    while (std::getline(backingStoreFile, line)) {
+        std::istringstream iss(line);
+        if (iss >> pid >> cmdCount >> memSize) {
+            backingStore[pid] = std::make_pair(cmdCount, memSize);
+        }
+    }
+    backingStoreFile.close();
+
+    // Add or update the process's data in the backing store
+    backingStore[process->getProcessID()] = std::make_pair(process->getCommandCounter(), process->getMemorySize());
+
+    // Write the updated data back to the file
+    std::ofstream saveFile(".pagefile", std::ios::trunc);
+    if (!saveFile.is_open()) {
+        std::cerr << "Failed to open the file for writing." << std::endl;
+        return;
+    }
+
+    for (const auto& entry : backingStore) {
+        saveFile << entry.first << ' ' << entry.second.first << ' ' << entry.second.second << '\n';
+    }
+    saveFile.close();
+}
+
+
+void MemoryManager::printProcesses() {
+    int totalUsed = 0;
+    std::vector<std::string> processMemoryDetails;
+
+    for (const auto& allocation : this->allocations) {
+        std::string details = allocation.process->getName() + " uses " + 
+                              std::to_string(allocation.size) + " units";
+        processMemoryDetails.push_back(details);
+        totalUsed += allocation.size;
+    }
+
+    double memoryUtilization = (double)totalUsed / this->maxMemory * 100.0;
+
+    std::cout << "Memory Usage: " << totalUsed << " / " << this->maxMemory << std::endl;
+    std::cout << "Memory Utilization: " << memoryUtilization << "%" << std::endl << std::endl;
+
+    std::cout << "Running processes and memory usage:" << std::endl;
+    for (const auto& details : processMemoryDetails) {
+        std::cout << details << std::endl;
+    }
+}
+
+
+void MemoryManager::vmstat() {
+    int totalMemory = this->maxMemory * 1024; // Assuming memory is in KB
+    int activeMemory = calculateActiveMemory() * 1024; // You'll need a method to calculate active memory
+    int usedMemory = calculateUsedMemory() * 1024; // Similarly, calculate used memory
+
+    int totalTicks = Scheduler::getTotalTicks();
+    int activeTicks = Scheduler::getActiveTicks();
+    int idleTicks = totalTicks - activeTicks;
+
+    std::cout << "K Total Memory: " << totalMemory << " KB\n"
+              << "K Used Memory: " << usedMemory << " KB\n"
+              << "K Active Memory: " << activeMemory << " KB\n"
+              << "Idle CPU Ticks: " << idleTicks << "\n"
+              << "Active CPU Ticks: " << activeTicks << "\n"
+              << "Total CPU Ticks: " << totalTicks << std::endl;
 }
