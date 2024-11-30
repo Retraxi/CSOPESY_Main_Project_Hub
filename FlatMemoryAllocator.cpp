@@ -15,7 +15,10 @@ FlatMemoryAllocator::~FlatMemoryAllocator() {
 }
 
 void* FlatMemoryAllocator::allocate(std::shared_ptr<Process> process) {
-	for (size_t i = 0; i < maximumSize - process->getMemorySize() + 1; i++)
+	size_t processMem = process->getMemorySize();
+
+	size_t memSize = this->maximumSize - processMem;
+	for (size_t i = 0; i < memSize + 1; i++)
 	{
 		if (!allocationMap[i] && canAllocateAt(i, process->getMemorySize())) {
 			allocateAt(i, process->getMemorySize());

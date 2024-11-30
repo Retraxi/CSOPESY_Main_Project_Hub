@@ -40,7 +40,7 @@ public:
 
     // Memory-related getters
     size_t getMemorySize() const; // Returns the memory size of the process
-    size_t getNumPages() const;   // Calculates the number of pages needed for the process
+    //size_t getNumPages() const;   // Calculates the number of pages needed for the process
     std::vector<size_t> getFrameIndices();
 
     // Time-related methods

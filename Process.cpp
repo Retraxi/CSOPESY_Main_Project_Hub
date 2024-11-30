@@ -1,4 +1,4 @@
-//#define _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
 #include "Process.h"
 #include <iostream>
 #include <iomanip>
@@ -22,9 +22,6 @@ Process::Process(int pid, std::string name, size_t memorySize)
     std::time_t now = std::time(nullptr);
     createdAt = std::localtime(&now);
     finishedAt = nullptr;
-
-    std::cout << "Process Created: ID=" << pid << ", Name=" << processName
-        << ", Memory Size=" << memorySize << " bytes (" << getNumPages() << " pages).\n";
 }
 
 // Getters
@@ -59,11 +56,6 @@ void Process::setMemorySize(size_t memorySize) {
 size_t Process::getMemorySize() const {
     return memorySize;
 }
-
-size_t Process::getNumPages() const {
-    //
-}
-
 // Time-related methods
 tm* Process::getCreatedAt() {
     return createdAt;

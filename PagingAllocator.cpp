@@ -16,7 +16,7 @@ void* PagingAllocator::allocate(std::shared_ptr<Process> process) {
 		//Scenario for entirely new processes
 		//std::cerr << "Memory Allocation failed, not enough free frames. " << std::endl;
 		//If lacking frames -> allocate frames until full
-		processOrder.push(process); //looking for age
+		processOrder.emplace_back(process); //looking for age
 		size_t frameIndex = allocateFrames(numFramesNeeded, processId);
 
 		return reinterpret_cast<void*>(frameIndex); //different from static cast, returns the start address
@@ -52,8 +52,7 @@ void* PagingAllocator::allocate(std::shared_ptr<Process> process) {
 			return nullptr;
 
 		}
-
-		processOrder.push(process);
+		processOrder.emplace_back(process);
 
 		size_t frameIndex = allocateFrames(numFramesNeeded, processId);
 		return reinterpret_cast<void*>(frameIndex); //different from static cast	

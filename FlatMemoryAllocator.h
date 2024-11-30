@@ -6,7 +6,7 @@
 class FlatMemoryAllocator : public IMemoryAllocator {
 public: 
 	FlatMemoryAllocator(size_t maxMemory);
-	~FlatMemoryAllocator() = default;
+	~FlatMemoryAllocator();
 
 	void* allocate(std::shared_ptr<Process> process) override;
 	void deallocate(std::shared_ptr<Process> process) override;

@@ -1,4 +1,5 @@
 #pragma once
+#include "Process.h"
 #include <string>
 class IMemoryAllocator {
 public:

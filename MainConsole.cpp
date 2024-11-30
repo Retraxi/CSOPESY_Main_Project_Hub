@@ -72,6 +72,7 @@ void MainConsole::process()
 				this->refresh = false; //when exiting back will re-print the header
 			}
 		}
+		/*
 		else if (command.substr(0, 14) == "save-backstore")
 		{
 			// Save a snapshot of the current memory to the backing store
@@ -80,7 +81,7 @@ void MainConsole::process()
 			allocator.saveMemorySnapshot(snapshotId);
 			std::cout << "Backstore snapshot saved as memory_snapshot_" << snapshotId << ".txt\n";
 		}
-
+		*/
 		else if (command.substr(0, 9) == "screen -s")
 		{
 			//make process using it for now
@@ -200,7 +201,7 @@ void MainConsole::process()
 					cpuNum, configTable["scheduler"].substr(1, configTable["scheduler"].size() - 1),
 					qCycle, bpFreq,
 					miIns, maIns,
-					dpEx
+					dpEx, maxMemory, minMPP, maxMPP
 				);
 
 				this->initialized = true;
