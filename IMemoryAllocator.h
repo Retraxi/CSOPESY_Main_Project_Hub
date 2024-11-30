@@ -1,6 +1,6 @@
 #pragma once
-#ifndef IALLOCATOR_H
-#define IALLOCATOR_H
+#ifndef IMEMORYALLOCATOR_H
+#define IMEMORYALLOCATOR_H
 
 #include "Process.h"
 
@@ -18,3 +18,4 @@ public:
 
 
 
+#endif // !IMEMORYALLOCATOR_H
