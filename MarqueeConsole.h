@@ -11,14 +11,11 @@ class MarqueeConsole : public AConsole
 public:
 
 
-	//keyboard polling
-	void keyboardPolling();
-	void printProcessed();
+	
 
-
-	void onEnabled() override;
-	void process() override;
-	void display() override;
+	//void onEnabled() override;
+	//void process() override;
+	//void display() override;
 	
 	MarqueeConsole(int refreshRate);
 	~MarqueeConsole() = default;
