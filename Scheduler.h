@@ -6,7 +6,7 @@
 #include <queue>
 #include <vector>
 
-#include "Core.h"
+#include "CPU.h"
 #include "MemoryManager.h"
 #include "Process.h"
 #include <mutex>
