@@ -1,60 +1,66 @@
-#pragma once
-#include "IMemoryAllocator.h"
 #include "FlatMemoryAllocator.h"
-#include <iterator>
 #include "Process.h"
 
-FlatMemoryAllocator::FlatMemoryAllocator(size_t maxMemory) {
-	this->maximumSize = maxMemory;
-	memory.reserve(maximumSize);
-	initializeMemory();
-}
-
-FlatMemoryAllocator::~FlatMemoryAllocator() {
-	memory.clear();
-}
-
-void* FlatMemoryAllocator::allocate(std::shared_ptr<Process> process) {
-	for (size_t i = 0; i < maximumSize - process->getMemorySize() + 1; i++)
-	{
-		if (!allocationMap[i] && canAllocateAt(i, process->getMemorySize())) {
-			allocateAt(i, process->getMemorySize());
-			return &memory[i];
-		}
-	}
-	//nothing available
-	return nullptr;
-}
-
-void FlatMemoryAllocator::deallocate(std::shared_ptr<Process> process) {
-	size_t index = reinterpret_cast<char*>(process->getMemorySize()) - &memory[0];
-	if (allocationMap[index])
-	{
-		deallocateAt(index);
-	}
-}
-
-void FlatMemoryAllocator::visualizeMemory() {
-	 std::cout << std::string(memory.begin(), memory.end()) << std::endl;
+FlatMemoryAllocator::FlatMemoryAllocator(size_t maxMemory)
+    : maximumSize(maxMemory), allocatedSize(0), memory(maxMemory, '.'), allocationMap(maxMemory, false) {
+    initializeMemory();
 }
 
 void FlatMemoryAllocator::initializeMemory() {
-	std::fill(memory.begin(), memory.end(), '.');
+    std::fill(memory.begin(), memory.end(), '.'); // Initialize memory with '.'
+}
+
+void* FlatMemoryAllocator::allocate(std::shared_ptr<Process> process) {
+    size_t processSize = process->getMemorySize();
+    for (size_t i = 0; i <= maximumSize - processSize; ++i) {
+        if (canAllocateAt(i, processSize)) {
+            allocateAt(i, processSize);
+            processAllocationMap[process->getProcessID()] = i; // Store the start index
+            return &memory[i];
+        }
+    }
+    std::cout << "Allocation failed for Process ID=" << process->getProcessID() << ".\n";
+    return nullptr;
+}
+
+void FlatMemoryAllocator::deallocate(std::shared_ptr<Process> process) {
+    int pid = process->getProcessID();
+    auto it = processAllocationMap.find(pid);
+    if (it != processAllocationMap.end()) {
+        size_t startIndex = it->second;
+        deallocateAt(startIndex, process->getMemorySize());
+        processAllocationMap.erase(it);
+    } else {
+        std::cout << "Deallocation failed for Process ID=" << pid << ": Not found.\n";
+    }
 }
 
 bool FlatMemoryAllocator::canAllocateAt(size_t index, size_t size) {
-	return (index + size <= maximumSize);
+    for (size_t i = index; i < index + size; ++i) {
+        if (allocationMap[i]) return false;
+    }
+    return true;
 }
 
 void FlatMemoryAllocator::allocateAt(size_t index, size_t size) {
-	auto offset1 = std::next(allocationMap.begin(), index);
-	auto offset2 = std::next(allocationMap.begin(), index + size);
-	std::fill(offset1 , offset2, true);
-	allocatedSize += size;
+    for (size_t i = index; i < index + size; ++i) {
+        allocationMap[i] = true;
+        memory[i] = '#'; // Mark allocated memory
+    }
+    allocatedSize += size;
 }
 
-void FlatMemoryAllocator::deallocateAt(size_t index) {
-	allocationMap[index] = false;
+void FlatMemoryAllocator::deallocateAt(size_t index, size_t size) {
+    for (size_t i = index; i < index + size; ++i) {
+        allocationMap[i] = false;
+        memory[i] = '.'; // Reset memory to free state
+    }
+    allocatedSize -= size;
 }
 
-
+void FlatMemoryAllocator::visualizeMemory() {
+    for (char block : memory) {
+        std::cout << block;
+    }
+    std::cout << "\n";
+}
