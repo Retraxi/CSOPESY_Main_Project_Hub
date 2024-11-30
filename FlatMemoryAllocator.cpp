@@ -100,24 +100,7 @@ void FlatAllocator::printMem() {
 		total += this->_memory.at(i).second.second - this->_memory.at(i).second.first;
 	}
 
-	/*MemoryBlock* currentBlock = this->_head;
-	for (int i = 0; i < this->_maxMemory; i++) {
-		if (currentBlock->process != "") {
-			if (!currentBlock->isFree && currentBlock->process != lastProcess) {
-				lastProcess = currentBlock->process;
-				uniqueCtr++;
-				output = std::to_string(i) + "\n\n" + output;
-			}
-			if (currentBlock->next == nullptr || currentBlock->next->process != lastProcess) {
-				output = std::to_string(i + 1) + "\n" + lastProcess + "\n" + output;
-			}
-		}
-		else {
-			externalFragmentation++;
-		}
-		currentBlock = currentBlock->next;
-	}*/
-
+	
 	output = std::string(buffer) + "\n"
 		+ "Number of processes in memory: " + std::to_string(uniqueCtr) + "\n"
 		+ "Total external fragmentation in KB: " + std::to_string(this->_maxMemory - total) + "\n"
