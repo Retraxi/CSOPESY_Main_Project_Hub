@@ -3,77 +3,47 @@
 #include <vector>
 #include <string>
 #include <mutex>
-#include <ctime> // For std::tm
-
-/*
-#ifndef PAGE_SIZE
-#define PAGE_SIZE 4096 // 4KB page size for paging systems
-#endif
-*/
+#include <ctime>
 
 class Process {
-    /* Class Overview:
-       - Core ID: Identifies the CPU core running the process.
-       - Instruction List: List of commands/instructions the process will execute.
-       - Process State: Tracks execution progress and completion status.
-       - Time Stamps: Created and finished timestamps.
-       - Memory: Memory requirements for paging systems.
-    */
-
 public:
-    // Constructor for processes without memory requirements
-    Process(int pid, std::string name);
-
-    // Constructor for processes with memory requirements
-    Process(int pid, std::string name, size_t memorySize);
-
-    // Default destructor
+    Process(int pid, std::string name, size_t memorySize = 0);
     ~Process() = default;
 
-    // Getters for process attributes
-    std::string getName() const;
-    int getCommandCounter() const;
-    int getProcessID() const;
-    int getCoreID() const;
-    int getTotalInstructionLines() const;
-    int getCurrentInstructionLines() const;
-
-    // Memory-related getters
-    size_t getMemorySize() const; // Returns the memory size of the process
-    size_t getNumPages() const;   // Calculates the number of pages needed for the process
-    std::vector<size_t> getFrameIndices();
+    // Thread-safe getters
+    std::string getName() const { std::lock_guard<std::mutex> lock(mtx); return processName; }
+    int getProcessID() const { return pid; }
+    int getCoreID() const { std::lock_guard<std::mutex> lock(mtx); return coreID; }
+    size_t getMemorySize() const { return memorySize; }
+    std::vector<size_t> getFrameIndices() const { std::lock_guard<std::mutex> lock(mtx); return frameIndices; }
 
     // Time-related methods
-    tm* getCreatedAt();           // Returns the creation timestamp
-    tm* getFinishedAt();          // Returns the finished timestamp
-    void setFinishedAt(tm* finishedAt); // Sets the finished timestamp
+    std::tm* getCreatedAt() const { return createdAt; }
+    std::tm* getFinishedAt() const { return finishedAt; }
+    void setFinishedAt(const std::tm& time);
 
     // Setters and modifiers
-    void setCoreID(int coreID);   // Assigns a CPU core to the process
+    void setCoreID(int coreID);
     void setMemorySize(size_t memorySize);
-    void setFrameIndices(std::vector<size_t> frameIndices);
-    void setInstruction(int totalCount); // Adds a specified number of instructions
-    void testInitFCFS();          // Initializes test instructions for First-Come-First-Serve scheduling
+    void setFrameIndices(const std::vector<size_t>& indices);
 
     // Execution-related methods
-    void execute();               // Executes the current instruction
-    bool isDone();                // Checks if the process has completed all instructions
+    void execute();
+    bool isDone();
 
 private:
-    std::mutex mtx;               // Mutex for thread-safe updates
+    mutable std::mutex mtx;
 
-    // Process attributes
-    int pid;                      // Process ID
-    int coreID;                   // Assigned CPU core ID
-    int currentInstructionLine;   // Current instruction being executed
-    
-    std::tm* createdAt;           // Timestamp when the process was created
-    std::tm* finishedAt;          // Timestamp when the process was finished
-    std::string processName;      // Name of the process
-    std::vector<std::string> instructionList; // List of instructions/commands
-    int commandCounter;  //added command counter
+    int pid;
+    std::string processName;
+    std::vector<std::string> instructionList;
+    int currentInstructionLine = 0;
+    int coreID = -1;
 
-    size_t memorySize;            // Memory size required for the process (used in memory allocation)
-    size_t memoryIndex; //Flat Mem Alloc reference
-    std::vector<size_t> frameIndices; //frame, page, whatever, reference for Paging
+    std::tm* createdAt;
+    std::tm* finishedAt = nullptr;
+    size_t memorySize;
+    std::vector<size_t> frameIndices;
 };
+
+#endif
