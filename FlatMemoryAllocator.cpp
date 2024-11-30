@@ -16,12 +16,12 @@
 #include "CPUScheduler.h"
 
 
-FlatAllocator::FlatAllocator(int maxMemory) : _maxMemory(maxMemory) {
+FlatMemoryAllocator::FlatMemoryAllocator(int maxMemory) : _maxMemory(maxMemory) {
 	std::ofstream backingStoreFile(".pagefile", std::ios::trunc);
 	backingStoreFile.close();
 }
 
-bool FlatAllocator::allocate(std::shared_ptr<Process> process) {
+bool FFlatMemoryAllocator::allocate(std::shared_ptr<Process> process) {
 	int requiredMem = process->getRequiredMemory();
 	this->readBackingStore(process);
 	if (this->_memory.size() == 0) {
@@ -73,7 +73,7 @@ bool FlatAllocator::allocate(std::shared_ptr<Process> process) {
 	return false;
 }
 
-void FlatAllocator::deallocate(std::shared_ptr<Process> process) {
+void FlatMemoryAllocator::deallocate(std::shared_ptr<Process> process) {
 	this->readBackingStore(process);
 	for (size_t i = 0; i < this->_memory.size(); i++) {
 		if (this->_memory.at(i).first->getName() == process->getName()) {
@@ -82,7 +82,7 @@ void FlatAllocator::deallocate(std::shared_ptr<Process> process) {
 	}
 }
 
-void FlatAllocator::printMem() {
+void FlatMemoryAllocator::printMem() {
 	auto timestamp = time(nullptr);
 	struct tm timeInfo;
 	localtime_s(&timeInfo, &timestamp);
@@ -111,7 +111,7 @@ void FlatAllocator::printMem() {
 	std::cout << output << std::endl;
 }
 
-void FlatAllocator::readBackingStore(std::shared_ptr<Process> process) {
+void FlatMemoryAllocator::readBackingStore(std::shared_ptr<Process> process) {
 	std::ifstream backingStoreFile(".pagefile");
 	if (!backingStoreFile.is_open()) {
 		std::cerr << "Failed to open the file." << std::endl;
@@ -142,7 +142,7 @@ void FlatAllocator::readBackingStore(std::shared_ptr<Process> process) {
 	}
 }
 
-void FlatAllocator::writeBackingStore(std::shared_ptr<Process> process) {
+void FlatMemoryAllocator::writeBackingStore(std::shared_ptr<Process> process) {
 	std::ifstream backingStoreFile(".pagefile");
 	if (!backingStoreFile.is_open()) {
 		std::cerr << "Failed to open the file." << std::endl;
@@ -173,7 +173,7 @@ void FlatAllocator::writeBackingStore(std::shared_ptr<Process> process) {
 	}
 }
 
-void FlatAllocator::printProcesses() {
+void FlatMemoryAllocator::printProcesses() {
 	int uniqueCtr = this->_memory.size();
 	int externalFragmentation = 0;
 	std::string lastProcess = "";
@@ -213,7 +213,7 @@ void FlatAllocator::printProcesses() {
 	std::cout << std::endl;
 }
 
-void FlatAllocator::vmstat() {
+void FlatMemoryAllocator::vmstat() {
 	int used = 0;
 	if (_memory.size() > 0) {
 		used = _memory[_memory.size() - 1].second.second - _memory[0].second.first;
