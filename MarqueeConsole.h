@@ -10,9 +10,6 @@ class MarqueeConsole : public AConsole
 {
 public:
 
-	//marquee text
-	void printMarqueeHeader();
-	void moveCursor(int x, int y);
 
 	//keyboard polling
 	void keyboardPolling();
