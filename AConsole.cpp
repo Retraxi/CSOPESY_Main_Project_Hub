@@ -1,100 +1,94 @@
 #include "AConsole.h"
 #include <iostream>
-#include <memory>
-#include <string>
 #include <thread>
 #include <windows.h>
 #include <tuple>
 
-AConsole::AConsole(String name)
-{
-	this->name = name;
+AConsole::AConsole(String consoleName) : consoleName(std::move(consoleName)) {}
+
+void AConsole::start() {
+    std::cout << "Activating Console: " << this->consoleName << std::endl;
+    this->active = true;
+    std::this_thread::sleep_for(std::chrono::milliseconds(50)); // Increased delay slightly
+    this->terminate();
 }
 
-
-
-void AConsole::run() {
-    std::cout << "Starting " + this->_name << std::endl;
-    this->_active = true;
-    std::this_thread::sleep_for(std::chrono::milliseconds(25));
-    this->stop();
-}
-
-void AConsole::stop() {
-    if (this->_active) {
-        this->_active = false;
-        std::cout << "Stopping " + this->_name << std::endl;
+void AConsole::terminate() {
+    if (this->active) {
+        this->active = false;
+        std::cout << "Deactivating Console: " << this->consoleName << std::endl;
     }
 }
 
-void AConsole::draw() {
-    std::cout << this->_name << std::endl;
-    std::tuple<short, short> temp = this->getWindowSize();
-    std::cout << std::get<0>(temp) << " " << std::get<1>(temp) << std::endl;
+void AConsole::render() {
+    std::cout << "Console: " << this->consoleName << std::endl;
+    auto [width, height] = this->fetchConsoleSize();
+    std::cout << "Width: " << width << ", Height: " << height << std::endl;
 }
 
-void AConsole::SetCursorPosition(short row, short col) {
+void AConsole::moveCursorTo(short row, short col) {
     HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
-    COORD coord = { col, row };
-    SetConsoleCursorPosition(handle, coord);
+    COORD position = { col, row };
+    SetConsoleCursorPosition(handle, position);
 }
 
-void AConsole::DrawHorizontalLine(short row, short col, short length, bool two) {
-    SetCursorPosition(row, col);
-    char c = two ? '=' : '-';
+void AConsole::drawHorizontalBorder(short row, short col, short length, bool doubleLine) {
+    moveCursorTo(row, col);
+    char borderChar = doubleLine ? '=' : '-';
     for (short i = 0; i < length; i++) {
-        std::cout << c;
+        std::cout << borderChar;
     }
 }
 
-void AConsole::DrawVerticalLine(short row, short col, short length) {
+void AConsole::drawVerticalBorder(short row, short col, short length) {
     for (short i = 0; i < length; i++) {
-        SetCursorPosition(row + i, col);
+        moveCursorTo(row + i, col);
         std::cout << '|';
     }
 }
 
-void AConsole::PrintAtCoords(short row, short col, std::string string, short length, bool right) {
-    SetCursorPosition(row, col);
-    if (length != -1)
-        if (right)
-            printf("%-*s", length, string.c_str());
+void AConsole::writeTextAt(short row, short col, const String& text, short length, bool alignRight) {
+    moveCursorTo(row, col);
+    if (length != -1) {
+        if (alignRight)
+            printf("%-*s", length, text.c_str());
         else
-            printf("%*s", length, string.c_str());
-    else
-        std::cout << string;
+            printf("%*s", length, text.c_str());
+    } else {
+        std::cout << text;
+    }
 }
 
-void AConsole::FillCorners(short topRow, short leftCol, short width, short height) {
+void AConsole::decorateCorners(short topRow, short leftCol, short width, short height) {
     width -= 1;
     height -= 1;
-    PrintAtCoords(topRow, leftCol, "+");
-    PrintAtCoords(topRow, leftCol + width, "+");
-    PrintAtCoords(topRow + height, leftCol, "+");
-    PrintAtCoords(topRow + height, leftCol + width, "+");
+    writeTextAt(topRow, leftCol, "+");
+    writeTextAt(topRow, leftCol + width, "+");
+    writeTextAt(topRow + height, leftCol, "+");
+    writeTextAt(topRow + height, leftCol + width, "+");
 }
 
-void AConsole::DrawBox(short topRow, short leftCol, short width, short height, bool two) {
+void AConsole::drawRectangle(short topRow, short leftCol, short width, short height, bool doubleLine) {
     width -= 1;
     height -= 1;
-    if (width != 0) {
-        DrawHorizontalLine(topRow, leftCol, width, two);
-        DrawHorizontalLine(topRow + height, leftCol, width, two);
+    if (width > 0) {
+        drawHorizontalBorder(topRow, leftCol, width, doubleLine);
+        drawHorizontalBorder(topRow + height, leftCol, width, doubleLine);
     }
-    if (height != 0) {
-        DrawVerticalLine(topRow, leftCol, height);
-        DrawVerticalLine(topRow, leftCol + width, height);
+    if (height > 0) {
+        drawVerticalBorder(topRow, leftCol, height);
+        drawVerticalBorder(topRow, leftCol + width, height);
     }
-    FillCorners(topRow, leftCol, width + 1, height + 1);
+    decorateCorners(topRow, leftCol, width + 1, height + 1);
 }
 
-std::tuple<short, short> AConsole::getWindowSize() {
-    CONSOLE_SCREEN_BUFFER_INFO csbi;
+std::tuple<short, short> AConsole::fetchConsoleSize() const {
+    CONSOLE_SCREEN_BUFFER_INFO consoleInfo;
     short width, height;
 
-    GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
-    width = csbi.srWindow.Right - csbi.srWindow.Left + 1;
-    height = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
+    GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &consoleInfo);
+    width = consoleInfo.srWindow.Right - consoleInfo.srWindow.Left + 1;
+    height = consoleInfo.srWindow.Bottom - consoleInfo.srWindow.Top + 1;
 
     return std::make_tuple(width, height);
 }
