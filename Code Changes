@@ -1,0 +1,13 @@
+During the transition to Phase 2, several limitations were identified in the original Phase 1 implementation, which led to the adoption of a new approach. The original architecture, while adequate for basic scheduling and process management, revealed significant challenges when accommodating the requirements of memory allocation and management. Tightly coupled dependencies between components such as the Scheduler, MainConsole, and ConsoleManager, all inheriting from AConsole, created substantial difficulties in debugging and extending the system. Attempts to integrate functionalities like paging algorithms and backing store operations resulted in frequent errors across these components, including process switching failures, inconsistent memory reporting, and scheduling inaccuracies.
+
+As the requirements of memory management were introduced, design limitations became increasingly evident. Efforts to incorporate memory allocation and paging algorithms disrupted the existing structure, leading to a cascade of errors. For instance, modifications to support memory-related commands in the MainConsole required extensive adjustments across the ConsoleManager and Scheduler, increasing the system's fragility. Additionally, process interaction through components such as the MarqueeConsole and ProcessConsole encountered significant issues when adapting to handle the dynamic memory states of Phase 2. These challenges highlighted the rigidity of the original design, which made a comprehensive redesign unavoidable.
+
+To address these issues, a more modular and extensible framework was adopted. In the revised system, components such as the Scheduler and MemoryManager were decoupled, enabling independent functionality and streamlined integration of advanced features. The memory management subsystem, incorporating FlatAllocator, PagingAllocator, and MemoryManager, was implemented as a standalone module, reducing the impact of memory-related logic on other system components. The MainConsole was restructured to handle additional commands like process-smi and vmstat more effectively, ensuring maintainability and scalability.
+
+This redesign successfully mitigated the challenges of debugging and integration that were prevalent in the original system. By isolating responsibilities and enhancing modularity, the updated architecture provided a stable foundation for Phase 2's advanced features, including memory allocation strategies and dynamic process management. The adoption of this approach ensured the system could meet the requirements of Phase 2 while maintaining robustness and extensibility for future enhancements.
+
+
+
+
+
+
