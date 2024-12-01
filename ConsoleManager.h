@@ -1,55 +1,42 @@
 #pragma once
+#ifndef CONSOLEMANAGER_H
+#define CONSOLEMANAGER_H
 
-#include <memory>
 #include "AConsole.h"
+#include "Scheduler.h"
+#include <chrono>
+#include <memory>
+#include <string>
 #include <unordered_map>
-#include <Windows.h>
-#include "Screen.h"
-#include <iostream>
 #include "MainConsole.h"
-#include "MarqueeConsole.h"
 
-const std::string MAIN_CONSOLE = "MAIN_CONSOLE";
-const std::string MARQUEE_CONSOLE = "MARQUEE_CONSOLE";
 
-class ConsoleManager
-{
+typedef std::shared_ptr<AConsole> AConsole_;
+
+class ConsoleManager {
 public:
-	typedef std::unordered_map<std::string, std::shared_ptr<AConsole>> ConsoleTable;
+    static ConsoleManager* get();
+    static void initialize();
+    static void destroy();
 
-	static ConsoleManager* getInstance();
-	static void initialize();
-	static void destroy();
+    void start();
+    bool newConsole(std::string name, AConsole_ console = nullptr);
+    void switchConsole(std::string processName);
 
-	void drawConsole() const;//read only
-	void process() const;
-	void switchConsole(std::string consoleName);
-
-	void printScreens();
-	int tableSize();
-
-	void registerScreen(std::shared_ptr<Screen> screenRef);
-	void switchToScreen(std::string screenName);
-	void unregisterScreen(std::string screenName);
-
-	void returnToPreviousConsole();
-	void exitApplication();
-	bool isRunning() const;
-	
-	//HANDLE getConsoleHandle() const; //not being used for now
+    void setScheduler(Scheduler* scheduler) { _scheduler = scheduler; };
 
 private:
-	ConsoleManager();
-	~ConsoleManager() = default;
-	ConsoleManager(ConsoleManager const&) {};
-	ConsoleManager& operator=(ConsoleManager const&) {};
-	static ConsoleManager* sharedInstance;
+    ConsoleManager();
+    ~ConsoleManager();
 
-	ConsoleTable consoleTable;
-	std::shared_ptr<AConsole> currentConsole;
-	std::shared_ptr<AConsole> previousConsole;
+    static ConsoleManager* ptr;
+    std::unordered_map<std::string, AConsole_> _consoleMap;
+    AConsole_ _current = nullptr;
+    AConsole_ _mainConsole = nullptr;
 
-	bool running = true;
-	//HANDLE consoleHandle;
-
+    Scheduler* _scheduler = nullptr;
+    friend class MainConsole;
 };
+
+#endif // !CONSOLEMANAGER_H
+

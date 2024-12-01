@@ -1,137 +1,98 @@
-#define _CRT_SECURE_NO_WARNINGS
 #include "Process.h"
+
+#include <fstream>
 #include <iostream>
-#include <iomanip>
-#include <cmath> // For std::ceil
-#include <utility> // For std::move
+#include <memory>
+#include <string>
+#include <windows.h>
 
-// Constructor for processes without memory size
-Process::Process(int pid, std::string name)
-    : pid(pid), processName(std::move(name)), memorySize(0), coreID(-1), currentInstructionLine(0) {
-    std::time_t now = std::time(nullptr);
-    createdAt = std::localtime(&now);
-    finishedAt = nullptr;
+#include "PrintCommand.h"
+#include <mutex>
+#include <random>
 
-    std::cout << "Process Created: ID=" << pid << ", Name=" << processName
-        << ", No Memory Size Allocated.\n";
-}
+typedef std::string String;
 
-// Constructor for processes with memory size
-Process::Process(int pid, std::string name, size_t memorySize)
-    : pid(pid), processName(std::move(name)), memorySize(memorySize), coreID(-1), currentInstructionLine(0) {
-    std::time_t now = std::time(nullptr);
-    createdAt = std::localtime(&now);
-    finishedAt = nullptr;
+int Process::requiredPages = -1;
+int Process::sameMemory = -1;
 
-    std::cout << "Process Created: ID=" << pid << ", Name=" << processName
-        << ", Memory Size=" << memorySize << " bytes (" << getNumPages() << " pages).\n";
-}
+Process::Process(String name, std::uniform_int_distribution<int> commandDistr,
+    std::uniform_int_distribution<int> memoryDistr,
+    std::uniform_int_distribution<int> pageDistr) : _name(name) {
 
-// Getters
-std::string Process::getName() const {
-    return processName;
-}
-
-int Process::getCoreID() const {
-    return coreID;
-}
-
-int Process::getProcessID() const {
-    return pid;
-}
-
-int Process::getTotalInstructionLines() const {
-    return instructionList.size();
-}
-
-int Process::getCurrentInstructionLines() const {
-    return currentInstructionLine;
-}
-
-int Process::getCommandCounter() const {
-    return commandCounter;
-}
-
-size_t Process::getMemorySize() const {
-    return memorySize;
-}
-
-size_t Process::getNumPages() const {
-    return (memorySize + PAGE_SIZE - 1) / PAGE_SIZE; // Round up to calculate pages
-}
-
-// Time-related methods
-tm* Process::getCreatedAt() {
-    return createdAt;
-}
-
-tm* Process::getFinishedAt() {
-    return finishedAt;
-}
-
-void Process::setFinishedAt(tm* finishedAt) {
     std::lock_guard<std::mutex> lock(mtx);
-    this->finishedAt = finishedAt;
-    std::cout << "Process ID=" << pid << " marked as finished at "
-        << std::put_time(finishedAt, "%c") << ".\n";
-}
-
-// Methods for instructions
-void Process::testInitFCFS() {
-    std::string instruction = "Test instruction from " + processName;
-    for (size_t i = 0; i < 100; i++) {
-        instructionList.push_back(instruction);
+    this->_pid = Process::nextID;
+    Process::nextID++;
+    std::random_device rand_dev;
+    std::mt19937 generator(rand_dev());
+    int numCommands = commandDistr(generator);
+    for (int i = 0; i < numCommands; i++) {
+        this->_commandList.push_back(
+            std::make_shared<PrintCommand>(
+                "Hello world from " + this->_name + "!", this->_pid
+            )
+        );
     }
-    std::cout << "Process ID=" << pid << ": Initialized with 100 test instructions.\n";
-}
-
-void Process::setInstruction(int totalCount) {
-    std::string instruction = "Instruction from " + processName;
-    for (int i = 0; i < totalCount; i++) {
-        instructionList.push_back(instruction);
+    if (Process::sameMemory == -1) {
+        this->_requiredMemory = memoryDistr(generator);
+        int power = 1;
+        while (power < this->_requiredMemory) {
+            power *= 2;
+        }
+        this->_requiredMemory = power;
     }
-    std::cout << "Process ID=" << pid << ": Initialized with " << totalCount << " instructions.\n";
+    else {
+        this->_requiredMemory = Process::sameMemory;
+    }
 }
 
-// Check if the process is done executing
-bool Process::isDone() {
-    if (currentInstructionLine >= instructionList.size()) {
-        std::time_t now = std::time(nullptr);
-        setFinishedAt(std::localtime(&now));
-        std::cout << "Process ID=" << pid << " has completed execution.\n";
+void Process::execute() {
+    std::lock_guard<std::mutex> lock(mtx);
+    if (!this->hasFinished()) {
+        this->_commandList.at(_commandCounter)->execute(this->_cpuCoreID, ".\\output\\" + this->_name + ".txt");
+        this->_commandCounter++;
+    }
+}
+
+bool Process::hasFinished() {
+    if (this->_commandCounter >= this->_commandList.size()) {
         return true;
     }
     return false;
 }
 
-// Set the core ID for the process
-void Process::setCoreID(int coreID) {
+int Process::setRequiredPages(int min, int max) {
+    if (Process::requiredPages == -1) {
+        std::uniform_int_distribution<int>  pageDistr(min, max);
+        std::random_device rand_dev;
+        std::mt19937 generator(rand_dev());
+        Process::requiredPages = pageDistr(generator);
+        int power = 1;
+        while (power < Process::requiredPages) {
+            power *= 2;
+        }
+        Process::requiredPages = power;
+    }
+    return Process::requiredPages;
+}
+
+int Process::setRequiredMemory(int min, int max) {
+    if (Process::sameMemory == -1) {
+        std::uniform_int_distribution<int>  memDistr(min, max);
+        std::random_device rand_dev;
+        std::mt19937 generator(rand_dev());
+        Process::sameMemory = memDistr(generator);
+        int power = 1;
+        while (power < Process::sameMemory) {
+            power *= 2;
+        }
+        Process::sameMemory = power;
+    }
+    return Process::sameMemory;
+}
+
+void Process::setCPUCoreID(int cpuCoreID) {
     std::lock_guard<std::mutex> lock(mtx);
-    this->coreID = coreID;
-    std::cout << "Process ID=" << pid << " assigned to Core ID=" << coreID << ".\n";
+    this->_cpuCoreID = cpuCoreID;
 }
 
-// Simulate process execution
-void Process::execute() {
-    std::time_t now = std::time(nullptr);
-    int dummy = 0; // Simulated workload
-
-    if (!isDone()) {
-        std::cout << "Process ID=" << pid << " executing instruction " << currentInstructionLine + 1
-            << "/" << instructionList.size() << ".\n";
-
-        // Simulate processing delay
-        for (size_t i = 0; i < 10000; i++) {
-            dummy += 1;
-        }
-
-        currentInstructionLine++;
-
-        if (isDone()) {
-            std::cout << "Process ID=" << pid << " has finished executing all instructions.\n";
-        }
-    }
-    else {
-        std::cout << "Process ID=" << pid << " is already completed.\n";
-    }
-}
+int Process::nextID = 0;

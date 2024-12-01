@@ -1,70 +1,64 @@
 #pragma once
-#include <memory>
-#include <vector>
-#include <string>
-#include <mutex>
-#include <ctime> // For std::tm
+#ifndef PROCESS_H
+#define PROCESS_H
 
-#ifndef PAGE_SIZE
-#define PAGE_SIZE 4096 // 4KB page size for paging systems
-#endif
+#include <ctime>
+#include <memory>
+#include <string>
+#include <vector>
+
+#include "ICommand.h"
+#include <mutex>
+#include <random>
+
 
 class Process {
-    /* Class Overview:
-       - Core ID: Identifies the CPU core running the process.
-       - Instruction List: List of commands/instructions the process will execute.
-       - Process State: Tracks execution progress and completion status.
-       - Time Stamps: Created and finished timestamps.
-       - Memory: Memory requirements for paging systems.
-    */
-
 public:
-    // Constructor for processes without memory requirements
-    Process(int pid, std::string name);
-
-    // Constructor for processes with memory requirements
-    Process(int pid, std::string name, size_t memorySize);
-
-    // Default destructor
+    Process(std::string name,
+        std::uniform_int_distribution<int> commandDistr,
+        std::uniform_int_distribution<int> memoryDistr,
+        std::uniform_int_distribution<int> pageDistr
+    );
     ~Process() = default;
 
-    // Getters for process attributes
-    std::string getName() const;
-    int getCommandCounter() const;
-    int getProcessID() const;
-    int getCoreID() const;
-    int getTotalInstructionLines() const;
-    int getCurrentInstructionLines() const;
+    void execute();
+    bool hasFinished();
 
-    // Memory-related getters
-    size_t getMemorySize() const; // Returns the memory size of the process
-    size_t getNumPages() const;   // Calculates the number of pages needed for the process
+    int getID() const { return _pid; };
+    std::string getName() { std::lock_guard<std::mutex> lock(mtx); return _name; };
+    int getCommandCounter() { std::lock_guard<std::mutex> lock(mtx); return _commandCounter; };
+    int getCommandListSize() { std::lock_guard<std::mutex> lock(mtx); return _commandList.size(); };
+    int getBurst() { return this->getCommandListSize() - this->getCommandCounter(); };
+    time_t getArrivalTime() const { return _arrivalTime; };
+    time_t getFinishTime() { return _finishTime; };
+    int getRequiredMemory() { std::lock_guard<std::mutex> lock(mtx); return _requiredMemory; };
+    static int setRequiredPages(int min, int max);
+    static int setRequiredMemory(int min, int max);
+    static int getRequiredPages() { return Process::requiredPages; };
+    int getCPUCoreID() { std::lock_guard<std::mutex> lock(mtx); return _cpuCoreID; };
 
-    // Time-related methods
-    tm* getCreatedAt();           // Returns the creation timestamp
-    tm* getFinishedAt();          // Returns the finished timestamp
-    void setFinishedAt(tm* finishedAt); // Sets the finished timestamp
+    void setCPUCoreID(int cpuCoreID);
+    void setFinishTime() { this->_finishTime = time(nullptr); };
 
-    // Setters and modifiers
-    void setCoreID(int coreID);   // Assigns a CPU core to the process
-    void setInstruction(int totalCount); // Adds a specified number of instructions
-    void testInitFCFS();          // Initializes test instructions for First-Come-First-Serve scheduling
-
-    // Execution-related methods
-    void execute();               // Executes the current instruction
-    bool isDone();                // Checks if the process has completed all instructions
+    bool operator<(std::shared_ptr<Process> other) {
+        return this->getBurst() > other->getBurst();
+    };
+    static int nextID;
 
 private:
-    std::mutex mtx;               // Mutex for thread-safe updates
+    std::mutex mtx;
 
-    // Process attributes
-    int pid;                      // Process ID
-    int coreID;                   // Assigned CPU core ID
-    int currentInstructionLine;   // Current instruction being executed
-    size_t memorySize;            // Memory size required for the process (used in paging)
-    std::tm* createdAt;           // Timestamp when the process was created
-    std::tm* finishedAt;          // Timestamp when the process was finished
-    std::string processName;      // Name of the process
-    std::vector<std::string> instructionList; // List of instructions/commands
-    int commandCounter;  //added command counter
+    int _pid;
+    std::string _name;
+    std::vector<std::shared_ptr<ICommand>> _commandList;
+    int _commandCounter = 0;
+    int _cpuCoreID = -1;
+    time_t _arrivalTime = time(nullptr);
+    time_t _finishTime = time(nullptr);
+
+    int _requiredMemory;
+    static int requiredPages;
+    static int sameMemory;
 };
+
+#endif // !PROCESS_H

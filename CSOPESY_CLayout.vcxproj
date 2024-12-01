@@ -18,6 +18,39 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="AConsole.h" />
+    <ClInclude Include="Config.h" />
+    <ClInclude Include="ConsoleManager.h" />
+    <ClInclude Include="CPU.h" />
+    <ClInclude Include="FlatMemoryAllocator.h" />
+    <ClInclude Include="IMemoryAllocator.h" />
+    <ClInclude Include="ICommand.h" />
+    <ClInclude Include="MainConsole.h" />
+    <ClInclude Include="MarqueeConsole.h" />
+    <ClInclude Include="MemoryManager.h" />
+    <ClInclude Include="PagingAllocator.h" />
+    <ClInclude Include="PrintCommand.h" />
+    <ClInclude Include="Process.h" />
+    <ClInclude Include="ProcessConsole.h" />
+    <ClInclude Include="Scheduler.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="AConsole.cpp" />
+    <ClCompile Include="Config.cpp" />
+    <ClCompile Include="ConsoleManager.cpp" />
+    <ClCompile Include="CPU.cpp" />
+    <ClCompile Include="FlatMemoryAllocator.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="MainConsole.cpp" />
+    <ClCompile Include="MarqueeConsole.cpp" />
+    <ClCompile Include="MemoryManager.cpp" />
+    <ClCompile Include="PagingAllocator.cpp" />
+    <ClCompile Include="PrintCommand.cpp" />
+    <ClCompile Include="Process.cpp" />
+    <ClCompile Include="ProcessConsole.cpp" />
+    <ClCompile Include="Scheduler.cpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
@@ -127,36 +160,6 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="AConsole.cpp" />
-    <ClCompile Include="ConsoleManager.cpp" />
-    <ClCompile Include="Core.cpp" />
-    <ClCompile Include="CPUScheduler.cpp" />
-    <ClCompile Include="CSOPESY_CLayout.cpp" />
-    <ClCompile Include="MainConsole.cpp" />
-    <ClCompile Include="MarqueeConsole.cpp" />
-    <ClCompile Include="MemoryManager.cpp" />
-    <ClCompile Include="PagingAllocator.cpp" />
-    <ClCompile Include="Process.cpp" />
-    <ClCompile Include="Screen.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="AConsole.h" />
-    <ClInclude Include="ConsoleManager.h" />
-    <ClInclude Include="Core.h" />
-    <ClInclude Include="CPUScheduler.h" />
-    <ClInclude Include="ICommand.h" />
-    <ClInclude Include="IETThread.h" />
-    <ClInclude Include="MainConsole.h" />
-    <ClInclude Include="MarqueeConsole.h" />
-    <ClInclude Include="MemoryManager.h" />
-    <ClInclude Include="PagingAllocator.h" />
-    <ClInclude Include="Process.h" />
-    <ClInclude Include="Screen.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="WEEK8HW.txt" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
