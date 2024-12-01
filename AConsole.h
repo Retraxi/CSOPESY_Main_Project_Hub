@@ -1,4 +1,6 @@
 #pragma once
+#ifndef ACONSOLE_H
+#define ACONSOLE_H
 
 #include <string>
 #include <tuple>
@@ -11,7 +13,7 @@ public:
 	typedef std::string String;
 	AConsole(String name);
 	~AConsole() = default;
-        bool isActive() { return this->_active; }
+        bool isActive() { return  this->_active; }
         bool canRemove() { return this->canRemove; };
         virtual void run();
         virtual void stop();
