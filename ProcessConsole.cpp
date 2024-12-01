@@ -48,7 +48,7 @@ void ProcessConsole::stop() {
 	this->_active = false;
 }
 
-void ProcessConsole::render() {
+void ProcessConsole::draw() {
 	std::string info = "Process: " + this->_process->getName() + "\n"
 		+ "ID: " + std::to_string(this->_process->getID()) + "\n"
 		+ "\n";
