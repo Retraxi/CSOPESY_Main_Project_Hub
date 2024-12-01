@@ -15,8 +15,7 @@
 #include "Scheduler.h"
 //#include "MarqueeConsole.h"
 
-//typedef std::shared_ptr<AConsole> AConsole_;
-using ConsolePtr = std::shared_ptr<AConsole>;
+typedef std::shared_ptr<AConsole> AConsole_;
 
 
 //const std::string MAIN_CONSOLE = "MAIN_CONSOLE";
@@ -31,11 +30,12 @@ public:
 	 static void initializeManager();
 	 static void shutdownManager();
         void launch();
-      bool createConsole(const std::string& name, ConsolePtr console = nullptr);
+        bool createConsole(std::string name, AConsole_ console = nullptr);
+
 
 //	void drawConsole() const;//read only
 //	void process() const;
-	void switchToConsole(const std::string& consoleName);
+	void switchToConsole(std::string processName);
         void setScheduler(Scheduler* scheduler) { _scheduler = scheduler; };
 
 	
@@ -44,9 +44,10 @@ public:
 private:
 	ConsoleManager();
 	~ConsoleManager() ;
-	ConsoleManager(ConsoleManager const&) {};
-        static ConsoleManager* instance;
-        std::unordered_map<std::string, ConsolePtr> consoleRegistry;
+	
+       static ConsoleManager* ptr;
+
+         std::unordered_map<std::string, AConsole_> _consoleMap;
         AConsole_ _current = nullptr;
         AConsole_ _mainConsole = nullptr;
         Scheduler* _scheduler = nullptr;
