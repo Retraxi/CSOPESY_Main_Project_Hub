@@ -60,7 +60,7 @@ private:
     static int requiredPages;
     static int sameMemory;
 
-    static int calculatePowerOfTwo(int value); // Utility function to round up to the nearest power of two
+    static int calculatePowerOfTwo(int value); 
 };
 
 #endif // !PROCESS_H
