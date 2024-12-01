@@ -14,7 +14,7 @@
 
 MarqueeConsole::MarqueeConsole(int refreshRate) : AConsole("MarqueeConsole") {
     this->frameRate = refreshRate;
-    this->frameInterval = 1000 / refreshRate; // Changed variable name for clarity
+    this->frameInterval = 1000 / refreshRate; 
 }
 
 void MarqueeConsole::startConsole() {
