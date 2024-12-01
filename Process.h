@@ -1,4 +1,3 @@
-
 #pragma once
 #ifndef PROCESS_H
 #define PROCESS_H
@@ -7,9 +6,11 @@
 #include <memory>
 #include <string>
 #include <vector>
+
+#include "ICommand.h"
 #include <mutex>
 #include <random>
-#include "ICommand.h"
+
 
 class Process {
 public:
@@ -21,32 +22,31 @@ public:
     ~Process() = default;
 
     void execute();
-    bool hasFinished() const;
+    bool hasFinished();
 
     int getID() const { return _pid; };
-    std::string getName() const { std::lock_guard<std::mutex> lock(mtx); return _name; };
-    int getCommandCounter() const { std::lock_guard<std::mutex> lock(mtx); return _commandCounter; };
-    int getCommandListSize() const { std::lock_guard<std::mutex> lock(mtx); return _commandList.size(); };
-    int getBurst() const { return getCommandListSize() - getCommandCounter(); };
+    std::string getName() { std::lock_guard<std::mutex> lock(mtx); return _name; };
+    int getCommandCounter() { std::lock_guard<std::mutex> lock(mtx); return _commandCounter; };
+    int getCommandListSize() { std::lock_guard<std::mutex> lock(mtx); return _commandList.size(); };
+    int getBurst() { return this->getCommandListSize() - this->getCommandCounter(); };
     time_t getArrivalTime() const { return _arrivalTime; };
-    time_t getFinishTime() const { return _finishTime; };
-    int getRequiredMemory() const { std::lock_guard<std::mutex> lock(mtx); return _requiredMemory; };
+    time_t getFinishTime() { return _finishTime; };
+    int getRequiredMemory() { std::lock_guard<std::mutex> lock(mtx); return _requiredMemory; };
     static int setRequiredPages(int min, int max);
     static int setRequiredMemory(int min, int max);
     static int getRequiredPages() { return Process::requiredPages; };
-    int getCPUCoreID() const { std::lock_guard<std::mutex> lock(mtx); return _cpuCoreID; };
+    int getCPUCoreID() { std::lock_guard<std::mutex> lock(mtx); return _cpuCoreID; };
 
     void setCPUCoreID(int cpuCoreID);
-    void setFinishTime() { _finishTime = time(nullptr); };
+    void setFinishTime() { this->_finishTime = time(nullptr); };
 
-    bool operator<(const std::shared_ptr<Process>& other) const {
-        return getBurst() > other->getBurst();
+    bool operator<(std::shared_ptr<Process> other) {
+        return this->getBurst() > other->getBurst();
     };
-
     static int nextID;
 
 private:
-    mutable std::mutex mtx;
+    std::mutex mtx;
 
     int _pid;
     std::string _name;
@@ -59,8 +59,6 @@ private:
     int _requiredMemory;
     static int requiredPages;
     static int sameMemory;
-
-    static int calculatePowerOfTwo(int value); 
 };
 
 #endif // !PROCESS_H
