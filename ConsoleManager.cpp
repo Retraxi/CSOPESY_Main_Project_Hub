@@ -91,7 +91,5 @@ ConsoleManager::ConsoleManager() {
 }
 
 ConsoleManager::~ConsoleManager() {
-    consoleRegistry.clear();
-    activeConsole.reset();
-    mainConsole.reset();
+   
 }
