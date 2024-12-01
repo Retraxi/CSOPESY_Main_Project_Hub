@@ -1,0 +1,10 @@
+The transition from the Phase 1 implementation (MO1) to the Phase 2 implementation (MO2) was largely influenced by a change in the main coder. 
+Person who mainly coded  MO2 opted to bring in his  own implementation of MO1 to address the debugging challenges and  constraints of the original system. 
+While the Phase 1 design met its  goals, the  dependencies between critical components like the Scheduler, MainConsole, and ConsoleManager created significant 
+hurdles during debugging for Phase 2. Integrating advanced features required for Phase 2, particularly memory management and paging algorithms, proved impractical 
+without substantial modifications to the Phase 1 architecture due to constant errors in Scheduler and Process leading to massive overhaul in the respective files.
+ Debugging challenges in the original Phase 1 design led to inefficiencies that obstructed progress. The rigid inheritance structure from AConsole made it difficult to adapt
+ components like  the Scheduler , MainConsole , Process to accommodate memory management .  Because of this for MO2 decided the member created a new branch and re-implemented the 
+Phase 1 functionalities with adjustment tailored to Phase 2 requirements. This allowed the developer to focus on building framework and debugging bottlenecks encountered in the Phase 
+2 code resutling from Phase 1 code/issues.
+

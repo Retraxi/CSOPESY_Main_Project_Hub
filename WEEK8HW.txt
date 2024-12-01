@@ -1,0 +1,59 @@
+Files Added:
+MemoryManager.h
+
+Defines the MemoryManager class, which handles memory allocation and deallocation using the first-fit strategy.
+
+Key Functions:
+allocateMemory: Allocates memory for a process if sufficient space is available.
+deallocateMemory: Frees memory when a process finishes.
+calculateExternalFragmentation: Calculates external fragmentation by summing unused memory blocks.
+saveMemorySnapshot: Saves the memory state to a file every 4 quantum cycles.
+
+MemoryManager.cpp
+
+Implements the MemoryManager class functions.
+Each quantum-cycle, a memory snapshot is saved to a file (memory_stamp_<qq>.txt) with information on:
+Timestamp
+Number of processes in memory
+External fragmentation (in KB)
+ASCII representation of memory status, showing memory address limits and process allocation.
+
+
+Files Modified:
+
+Scheduler.cpp
+Purpose: Integrated MemoryManager to work with the round-robin scheduling function (RRScheduler).
+
+Modifications:
+Include Statement: Added #include "MemoryManager.h" to the top.
+MemoryManager Instance: Created an instance of MemoryManager with a total memory of 16,384 bytes and each process using 4,096 bytes.
+Memory Allocation in RRScheduler: Before assigning a process to a CPU core, the function checks if there is enough memory using memoryManager.allocateMemory(). If allocation fails, the process is requeued.
+Memory Deallocation in RRScheduler: When a process completes, memory is freed using memoryManager.deallocateMemory().
+Memory Snapshot in RRScheduler: Every 4 quantum cycles, a snapshot of memory is saved with memoryManager.saveMemorySnapshot(quantumCycle).
+
+New Functionality:
+The updated round-robin scheduler now checks for memory availability before scheduling a process, simulating a first-fit memory allocation strategy.
+
+
+
+
+
+TO DO 
+
+Additional Testing for scheduler-test and screen -ls:
+
+Run the scheduler-test command sequence as outlined in the specs:
+Start scheduler-test, wait 5 seconds, then run scheduler-stop.
+Regularly use the screen -ls command to monitor scheduling and memory allocation.
+Confirm that all processes eventually transition to the finished state.
+
+Enhance report-util Command:
+
+report-util currently outputs basic CPU core usage and process information. To match the specifications fully, consider extending it to include memory utilization details, fragmentation statistics, or other relevant metrics.
+
+
+Testing of Memory Allocation:
+
+Perform extensive testing with various scenarios to ensure the first-fit memory allocator handles rapid allocation and deallocation effectively.
+Verify that processes correctly return to the ready queue if there is insufficient memory.
+

@@ -1,156 +1,98 @@
-#define _CRT_SECURE_NO_WARNINGS
 #include "Process.h"
+
 #include <fstream>
 #include <iostream>
-#include <iomanip>
+#include <memory>
+#include <string>
+#include <windows.h>
 
-Process::Process(int pid, std::string name) : pid(pid), processName(name)
-{
-	this->coreID = -1;
-	std::time_t now = std::time(nullptr);
-	createdAt = std::localtime(&now); //need this for scheduling
-	finishedAt = nullptr;
-	this->currentInstructionLine = 0;
+#include "PrintCommand.h"
+#include <mutex>
+#include <random>
+
+typedef std::string String;
+
+int Process::requiredPages = -1;
+int Process::sameMemory = -1;
+
+Process::Process(String name, std::uniform_int_distribution<int> commandDistr,
+    std::uniform_int_distribution<int> memoryDistr,
+    std::uniform_int_distribution<int> pageDistr) : _name(name) {
+
+    std::lock_guard<std::mutex> lock(mtx);
+    this->_pid = Process::nextID;
+    Process::nextID++;
+    std::random_device rand_dev;
+    std::mt19937 generator(rand_dev());
+    int numCommands = commandDistr(generator);
+    for (int i = 0; i < numCommands; i++) {
+        this->_commandList.push_back(
+            std::make_shared<PrintCommand>(
+                "Hello world from " + this->_name + "!", this->_pid
+            )
+        );
+    }
+    if (Process::sameMemory == -1) {
+        this->_requiredMemory = memoryDistr(generator);
+        int power = 1;
+        while (power < this->_requiredMemory) {
+            power *= 2;
+        }
+        this->_requiredMemory = power;
+    }
+    else {
+        this->_requiredMemory = Process::sameMemory;
+    }
 }
 
-std::string Process::getName() 
-{
-	return this->processName;
+void Process::execute() {
+    std::lock_guard<std::mutex> lock(mtx);
+    if (!this->hasFinished()) {
+        this->_commandList.at(_commandCounter)->execute(this->_cpuCoreID, ".\\output\\" + this->_name + ".txt");
+        this->_commandCounter++;
+    }
 }
 
-int Process::getCoreID()
-{
-	return this->coreID;
+bool Process::hasFinished() {
+    if (this->_commandCounter >= this->_commandList.size()) {
+        return true;
+    }
+    return false;
 }
 
-int Process::getProcessID() const
-{
-	return  this->pid;
+int Process::setRequiredPages(int min, int max) {
+    if (Process::requiredPages == -1) {
+        std::uniform_int_distribution<int>  pageDistr(min, max);
+        std::random_device rand_dev;
+        std::mt19937 generator(rand_dev());
+        Process::requiredPages = pageDistr(generator);
+        int power = 1;
+        while (power < Process::requiredPages) {
+            power *= 2;
+        }
+        Process::requiredPages = power;
+    }
+    return Process::requiredPages;
 }
 
-int Process::getTotalInstructionLines() const
-{
-	return this->instructionList.size();
+int Process::setRequiredMemory(int min, int max) {
+    if (Process::sameMemory == -1) {
+        std::uniform_int_distribution<int>  memDistr(min, max);
+        std::random_device rand_dev;
+        std::mt19937 generator(rand_dev());
+        Process::sameMemory = memDistr(generator);
+        int power = 1;
+        while (power < Process::sameMemory) {
+            power *= 2;
+        }
+        Process::sameMemory = power;
+    }
+    return Process::sameMemory;
 }
 
-int Process::getCurrentInstructionLines()
-{
-	return this->currentInstructionLine;
+void Process::setCPUCoreID(int cpuCoreID) {
+    std::lock_guard<std::mutex> lock(mtx);
+    this->_cpuCoreID = cpuCoreID;
 }
 
-tm* Process::getCreatedAt()
-{
-	return this->createdAt;
-}
-
-tm* Process::getFinishedAt()
-{
-	return this->finishedAt;
-}
-
-void Process::setFinishedAt(tm* finishedAt)
-{
-	std::lock_guard<std::mutex> lock(this->mtx);
-	this->finishedAt = finishedAt;
-}
-
-void Process::testInitFCFS()
-{
-	//specifically for the FCFS scheduler stuff
-	std::string instruction = "Hello world from " + processName;
-	for (size_t i = 0; i < 100; i++)
-	{
-		instructionList.push_back(instruction);
-	}
-}
-
-void Process::setInstruction(int totalCount) {
-	std::string instruction = "Hello world from " + processName;
-	for (size_t i = 0; i < totalCount; i++)
-	{
-		instructionList.push_back(instruction);
-	}
-}
-
-bool Process::isDone()
-{
-	if (currentInstructionLine >= instructionList.size())
-	{
-		//std::cout << processName << " has finished!";
-		//it's done
-		std::time_t now = std::time(nullptr);
-		// Convert time to local time (tm struct)
-		setFinishedAt(std::localtime(&now));
-		return true;
-	}
-	else {
-		return false;
-	}
-}
-
-void Process::setCoreID(int coreID)
-
-{
-	std::lock_guard<std::mutex> lock(this->mtx);
-	this->coreID = coreID;
-}
-
-void Process::execute()
-{
-	//std::lock_guard<std::mutex> lock(this->mtx);
-	//should probably make it so that there are different things this can do
-	//for now (09/10/24) it will be for printing to the outputfile
-	std::time_t now = std::time(nullptr);
-
-	// Convert time to local time (tm struct)
-	std::tm* local_time = std::localtime(&now);
-	int dummy = 0;
-
-	// Print time in desired format: Weekday | Month | Day | HH:MM:SS | YYYY
-	if (!this->isDone())
-	{
-		
-		//expensive operation or delay
-		//std::this_thread::sleep_for(std::chrono::microseconds(10));
-
-		//or a long for loop
-		for (size_t i = 0; i < 10000; i++)
-		{
-			dummy += 1;
-		}
-		currentInstructionLine++;
-
-		//append or create file
-		/*
-		std::fstream output;
-
-		//check if file is new or old
-		std::ifstream checker("./Logs/" + processName + ".txt");
-		if (checker.good())
-		{
-			//append
-			checker.close();
-			output.open("./Logs/" + processName + ".txt", std::ios::out | std::ios::app);
-			output << std::put_time(local_time, "(%d/%m/%Y %I:%M:%S%p) ")
-				<< "Core:" << this->coreID
-				<< " " << instructionList.at(currentInstructionLine) << std::endl;
-			currentInstructionLine++;
-			
-		}
-		else
-		{
-			//first time
-			checker.close();
-			output.open("./Logs/" + processName + ".txt", std::ios::out | std::ios::app);
-
-			output << "Process name: " << processName << std::endl;
-			output << "Logs: " << std::endl << std::endl;
-			output << std::put_time(local_time, "(%d/%m/%Y %I:%M:%S%p) ")
-				<< "Core:" << this->coreID
-				<< " " << instructionList.at(currentInstructionLine) << std::endl;
-			currentInstructionLine++;
-			output.close();
-		}
-		*/
-	}
-}
+int Process::nextID = 0;
