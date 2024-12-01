@@ -21,7 +21,7 @@ ASCII representation of memory status, showing memory address limits and process
 
 Files Modified:
 
-CPUScheduler.cpp
+Scheduler.cpp
 Purpose: Integrated MemoryManager to work with the round-robin scheduling function (RRScheduler).
 
 Modifications:
