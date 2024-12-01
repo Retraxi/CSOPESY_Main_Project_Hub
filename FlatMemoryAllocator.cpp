@@ -13,7 +13,7 @@
 #include <sstream>
 #include <iomanip>
 
-#include "CPUScheduler.h"
+#include "Scheduler.h"
 
 
 FlatMemoryAllocator::FlatMemoryAllocator(int maxMemory) : _maxMemory(maxMemory) {
@@ -21,7 +21,7 @@ FlatMemoryAllocator::FlatMemoryAllocator(int maxMemory) : _maxMemory(maxMemory) 
 	backingStoreFile.close();
 }
 
-bool FFlatMemoryAllocator::allocate(std::shared_ptr<Process> process) {
+bool FlatMemoryAllocator::allocate(std::shared_ptr<Process> process) {
 	int requiredMem = process->getRequiredMemory();
 	this->readBackingStore(process);
 	if (this->_memory.size() == 0) {
@@ -99,8 +99,6 @@ void FlatMemoryAllocator::printMem() {
 		output = std::to_string(this->_memory.at(i).second.second) + "\n" + this->_memory.at(i).first->getName() + "\n" + output;
 		total += this->_memory.at(i).second.second - this->_memory.at(i).second.first;
 	}
-
-	
 	output = std::string(buffer) + "\n"
 		+ "Number of processes in memory: " + std::to_string(uniqueCtr) + "\n"
 		+ "Total external fragmentation in KB: " + std::to_string(this->_maxMemory - total) + "\n"

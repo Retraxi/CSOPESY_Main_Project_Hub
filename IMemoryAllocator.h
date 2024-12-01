@@ -16,6 +16,4 @@ public:
     virtual void vmstat() = 0;
 };
 
-
-
-#endif // !IMEMORYALLOCATOR_H
+#endif //!IMEMORYALLOCATOR_H

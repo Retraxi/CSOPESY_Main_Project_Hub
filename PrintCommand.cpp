@@ -11,8 +11,7 @@ typedef std::string String;
 
 int PrintCommand::msDelay = 50;
 
-void PrintCommand::execute(int core, String filename) {
-
+void PrintCommand::execute(int core, std::string output) {
     std::this_thread::sleep_for(std::chrono::milliseconds(PrintCommand::msDelay));
 }
 

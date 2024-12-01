@@ -25,16 +25,13 @@ public:
 
     void startFCFS(int delay);
     void startRR(int delay, int quantumCycles);
-
     void stop();
     void destroy();
-
     static void initialize(int cpuCount,
         float batchProcessFreq,
         int minIns, int maxIns,
         int minMemProc, int maxMemProc,
         int maxMem, int minPage, int maxPage);
-
     void addProcess(std::shared_ptr<Process> process);
     void schedulerTest();
     void schedulerTestStop();
@@ -44,19 +41,18 @@ public:
     void processSmi();
     void vmstat();
 
+    int getTotalTicks();
+    int getInactiveTicks();
+
 private:
     Scheduler();
     ~Scheduler() = default;
 
-    int getTotalTicks();
-    int getInactiveTicks();
 
     std::mutex mtx;
 
-    void runFCFS(float delay); 
-    
-
-void runRR(float delay, int quantumCycles);
+    void runFCFS(float delay); // FCFS
+    void runRR(float delay, int quantumCycles); // RR
 
     void schedulerRun();
 
@@ -65,6 +61,7 @@ void runRR(float delay, int quantumCycles);
     queue<shared_ptr<Process>> _readyQueue;
     vector<shared_ptr<CPU>> _cpuList;
     vector<shared_ptr<Process>> _processList;
+    priority_queue<shared_ptr<Process>, std::vector<shared_ptr<Process>>, compare> _readyQueueSJF;
     MemoryManager* _memMan = nullptr;
 
     float batchProcessFreq;

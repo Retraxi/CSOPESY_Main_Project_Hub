@@ -2,40 +2,37 @@
 #ifndef ACONSOLE_H
 #define ACONSOLE_H
 
+#include <memory>
 #include <string>
 #include <tuple>
-#include <memory>
-
 
 
 class AConsole {
 public:
-	typedef std::string String;
-	AConsole(String name);
-	~AConsole() = default;
-        bool isActive() { return  this->_active; }
-        bool canRemove() { return this->canRemove; };
-        virtual void run();
-        virtual void stop();
+    AConsole(std::string name);
+    ~AConsole() = default;
 
+    bool isActive() { return this->_active; }
+    bool canRemove() { return this->_canRemove; };
 
+    virtual void run();
+    virtual void stop();
 
 protected:
-    virtual void render();
+    virtual void draw();
     void moveCursorTo(short row, short col);
-    void drawHorizontalBorder(short row, short col, short length, bool doubleLine = false);
-    void drawVerticalBorder(short row, short col, short length);
-    void writeTextAt(short row, short col, const String& text, short length = -1, bool alignRight = false);
+    void DrawHorizontalBorder(short row, short col, short length, bool two = false);
+    void DrawVerticalBorder(short row, short col, short length);
+    void writeTextAt(short row, short col, std::string string, short length = -1, bool right = false);
     void decorateCorners(short topRow, short leftCol, short width, short height);
-    void drawRectangle(short topRow, short leftCol, short width, short height, bool doubleLine = false);
-    std::tuple<short, short> fetchConsoleSize() const;
+    void drawRectangle(short topRow, short leftCol, short width, short height, bool two = false);
+    std::tuple<short, short> getWindowSize();
 
-    String consoleName;
+    std::string _name;
+
     bool _active = false;
-    bool _canRemove  = false;
+    bool _canRemove = false;
 };
 
-#endif  // !ACONSOLE_H
-
-
+#endif // !ACONSOLE_H
 

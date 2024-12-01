@@ -1,13 +1,13 @@
-include "ConsoleManager.h"
+#include "ConsoleManager.h"
 
 
 int main() {
     // init
     ConsoleManager::initialize();
-    ConsoleManager* csm = ConsoleManager::get();
+    ConsoleManager* conman = ConsoleManager::get();
 
     // start
-    csm->start();
+    conman->start();
 
     return 0;
 }

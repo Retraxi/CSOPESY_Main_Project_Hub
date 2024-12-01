@@ -6,12 +6,12 @@
 #include <sstream>
 #include <memory>
 #include "Process.h"
-#include "FlatAllocator.h"
+#include "FlatMemoryAllocator.h"
 #include "PagingAllocator.h"
 
 MemoryManager::MemoryManager(int maxMemory, int minPage, int maxPage) {
 	if (minPage == 1 && maxPage == 1) {
-		this->_allocator = new FlatAllocator(maxMemory);
+		this->_allocator = new FlatMemoryAllocator(maxMemory);
 	}
 	else {
 		Process::setRequiredPages(minPage, maxPage);
@@ -34,3 +34,4 @@ void MemoryManager::printMem(int qq) {
 void MemoryManager::vmstat() {
 	this->_allocator->vmstat();
 }
+

@@ -2,11 +2,11 @@
 #ifndef PAGINGALLOCATOR_H
 #define PAGINGALLOCATOR_H
 
-#include "IAllocator.h"
+#include "IMemoryAllocator.h"
 #include <queue>
 #include <unordered_map>
 
-class PagingAllocator : public IAllocator {
+class PagingAllocator : public IMemoryAllocator {
 public:
     PagingAllocator(int maxMemory);
     ~PagingAllocator() = default;

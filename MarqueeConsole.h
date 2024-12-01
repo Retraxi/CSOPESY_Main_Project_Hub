@@ -1,41 +1,28 @@
 #pragma once
-#include "AConsole.h"
-#include <Windows.h>
-#include <vector>
-#include <string>
 #ifndef MARQUEECONSOLE_H
 #define MARQUEECONSOLE_H
 
-class MarqueeConsole : public AConsole
-{
+#include "AConsole.h"
+#include <string>
+
+class MarqueeConsole : public AConsole {
 public:
-
-
-	
-
-	//void onEnabled() override;
-	//void process() override;
-	//void display() override;
-	
 	MarqueeConsole(int refreshRate);
 	~MarqueeConsole() = default;
-       void startConsole();
-       void terminateConsole();
+
+	void run();
+	void stop();
 
 private:
-	void render();
-	void handleCommand();
-        void moveMarquee();
+	void draw();
+	void processCommand();
 
-	
-       bool isStopped = true; 
-	 int frameRate;
-         int frameInterval;
+	bool stopFlag = true;
+	int refreshRate;
+	int interval;
 
-	 std::string userInput = "";
-	  std::string commandHistory = "";
+	std::string input = "";
+	std::string previous = "";
 };
 
 #endif // !MARQUEECONSOLE_H
-
-

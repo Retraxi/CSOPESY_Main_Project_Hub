@@ -1,8 +1,9 @@
+
 #include <cstdlib>
-#include <fstream> 
+#include <fstream> // in use
 #include <iostream>
 #include <memory>
-#include <sstream> 
+#include <sstream> // in use
 #include <string>
 #include <vector>
 
@@ -56,10 +57,10 @@ MainConsole::MainConsole(ConsoleManager* conman) : AConsole("MAIN_CONSOLE"), _co
 		};
 	this->_commandMap["report-util"] = [conman](argType arguments) {
 		std::ofstream out("csopesy-log.txt");
-		std::streambuf* coutbuf = std::cout.rdbuf(); 
-		std::cout.rdbuf(out.rdbuf()); 
+		std::streambuf* coutbuf = std::cout.rdbuf(); //save old buf
+		std::cout.rdbuf(out.rdbuf()); //redirect std::cout to out.txt!
 		conman->_scheduler->printStatus();
-		std::cout.rdbuf(coutbuf); 
+		std::cout.rdbuf(coutbuf); //reset to standard output again
 		std::cout << "root:\\> Report generated at root:/csopesy-log.txt\n";
 		};
 	this->_commandMap["scheduler-test"] = [conman](argType arguments) {
@@ -112,9 +113,6 @@ void MainConsole::run() {
 			if (schedType == "fcfs") {
 				sched->startFCFS(config.getDelaysPerExec());
 			}
-			else if (schedType == "sjf") {
-				sched->startSJF(config.getDelaysPerExec(), config.isPreemptive());
-			}
 			else if (schedType == "rr") {
 				sched->startRR(config.getDelaysPerExec(), config.getQuantumCycle());
 			}
@@ -158,25 +156,13 @@ void MainConsole::stop() {
 void MainConsole::draw() {
 }
 
-
-void MainConsole::printHeader() //Header function
-{
-	std::cout << R"(
-   _,.----.    ,-,--.    _,.---._        _ __       ,----.    ,-,--.                  
- .' .' -   \ ,-.'-  _\ ,-.' , -  `.   .-`.' ,`.  ,-.--` , \ ,-.'-  _\ ,--.-.  .-,--. 
-/==/  ,  ,-'/==/_ ,_.'/==/_,  ,  - \ /==/, -   \|==|-  _.-`/==/_ ,_.'/==/- / /=/_ /  
-|==|-   |  .\==\  \  |==|   .=.     |==| _ .=. ||==|   `.-.\==\  \   \==\, \/=/. /   
-|==|_   `-' \\==\ -\ |==|_ : ;=:  - |==| , '=',/==/_ ,    / \==\ -\   \==\  \/ -/    
-|==|   _  , |_\==\ ,\|==| , '='     |==|-  '..'|==|    .-'  _\==\ ,\   |==|  ,_/     
-\==\.       /==/\/ _ |\==\ -    ,_ /|==|,  |   |==|_  ,`-._/==/\/ _ |  \==\-, /      
- `-.`.___.-'\==\ - , / '.='. -   .' /==/ - |   /==/ ,     /\==\ - , /  /==/._/       
-             `--`---'    `--`--''   `--`---'   `--`-----``  `--`---'   `--`-`         
-   )" << std::endl;
-
-	std::cout << "\033[32m" << "Welcome to JC Online command line!" << "\033[0m" << std::endl;
-	std::cout << "\033[33m" << "Type 'exit' to quit, 'clear' to clear the screen." << "\033[0m" << std::endl;
+void MainConsole::printHeader() {
+	std::cout << R"(   _____  _____  ____  _____  ______  _______     __)" << std::endl
+		<< R"(  / ____|/ ____|/ __ \|  __ \|  ____|/ ____\ \   / /)" << std::endl
+		<< R"( | |    | (___ | |  | | |__) | |__  | (___  \ \_/ / )" << std::endl
+		<< R"( | |     \___ \| |  | |  ___/|  __|  \___ \  \   /  )" << std::endl
+		<< R"( | |____ ____) | |__| | |    | |____ ____) |  | |   )" << std::endl
+		<< R"(  \_____|_____/ \____/|_|    |______|_____/   |_|   )" << std::endl
+		<< "Hello, Welcome to JC Online command line!" << std::endl
+		<< "Type 'exit' to quit, 'clear' to clear the screen" << std::endl;
 }
-
-
-
-

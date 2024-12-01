@@ -19,14 +19,12 @@ public:
     void printMem(int qq);
     void vmstat();
 
-    IAllocator* getAllocator() {
+    IMemoryAllocator* getAllocator() {
         return this->_allocator;
     }
 
 private:
-    IAllocator* _allocator;
+    IMemoryAllocator* _allocator;
 };
 
 #endif // !MEMORYMANAGER_H
-
-

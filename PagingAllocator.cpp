@@ -16,7 +16,6 @@
 #include <iomanip>
 
 
-
 #define PAGE_SIZE 4;
 
 PagingAllocator::PagingAllocator(int maxMemory) : _maxMemory(maxMemory) {
@@ -132,13 +131,16 @@ void PagingAllocator::printProcesses() {
 	}
 
 	std::cout << "Memory Usage: " << this->_pageTable.size() * requiredMem << " / " << this->_maxMemory << std::endl;
+
 	std::cout << "Memory Util: " << (1.0 * (this->_pageTable.size() * requiredMem) / this->_maxMemory) * 100 << "%" << std::endl;
+
 	std::cout << std::endl;
 
 	for (int i = 0; i < 48; i++) {
 		std::cout << "=";
 	}
 	std::cout << std::endl;
+
 	std::cout << "Running processes and memory usage: " << std::endl;
 
 	for (int i = 0; i < 48; i++) {

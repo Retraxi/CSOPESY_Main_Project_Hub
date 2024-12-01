@@ -82,7 +82,12 @@ void Scheduler::destroy() {
 
 void Scheduler::addProcess(std::shared_ptr<Process> process) {
     std::lock_guard<std::mutex> lock(this->mtx);
-    this->_readyQueue.push(process);
+    if (Config::_scheduler == "sjf") {
+        this->_readyQueueSJF.push(process);
+    }
+    else {
+        this->_readyQueue.push(process);
+    }
     this->_processList.push_back(process);
 }
 
@@ -195,11 +200,16 @@ void Scheduler::runFCFS(float delay) { // FCFS
                     }
                 }
             }
-         
+            //else {
+            //    if (this->running == false) {
+            //        std::chrono::duration<float> duration(delay);
+            //        std::this_thread::sleep_for(duration);
+            //        this->running = true;
+            //    }
+            //}
         }
     }
 }
-
 
 void Scheduler::runRR(float delay, int quantumCycles) { // RR
     auto start = std::chrono::steady_clock::now();
@@ -247,11 +257,16 @@ void Scheduler::runRR(float delay, int quantumCycles) { // RR
                     this->_readyQueue.pop();
                     this->_readyQueue.push(process);
                 }
-                start = std::chrono::steady_clock::now(); 
+                start = std::chrono::steady_clock::now(); // Reset start time for the new process
             }
         }
 
-       
+        //// If no tasks were scheduled, sleep for delay
+        //if (!this->running) {
+        //    std::chrono::duration<float> duration(delay);
+        //    std::this_thread::sleep_for(duration);
+        //    this->running = true; // Set running to true to continue scheduling
+        //}
     }
 }
 
@@ -261,7 +276,7 @@ void Scheduler::processSmi() {
     }
     std::cout << std::endl;
 
-    std::cout << "| PROCESS-SMI  \t Driver Version: 01.00 |" << std::endl;
+    std::cout << "| PROCESS-SMI V01.00 \t Driver Version: 01.00 |" << std::endl;
 
     for (int i = 0; i < 48; i++) {
         std::cout << "-";
@@ -284,3 +299,5 @@ void Scheduler::processSmi() {
 void Scheduler::vmstat() {
     this->_memMan->vmstat();
 }
+
+

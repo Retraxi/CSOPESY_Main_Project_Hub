@@ -1,133 +1,119 @@
+#include "AConsole.h"
 #include "MarqueeConsole.h"
-#include <thread>
-#include <iostream>
-#include <conio.h>
-#include "ConsoleManager.h"
-#include <cstdlib>
 #include <chrono>
+#include <conio.h>
+#include <cstdlib>
+#include <iostream>
 #include <memory>
 #include <string>
+#include <thread>
 #include <tuple>
 
 
-//using namespace std;
-
 MarqueeConsole::MarqueeConsole(int refreshRate) : AConsole("MarqueeConsole") {
-    this->frameRate = refreshRate;
-    this->frameInterval = 1000 / refreshRate; 
+	this->refreshRate = refreshRate;
+	this->interval = 1000.0 / refreshRate;
 }
 
-void MarqueeConsole::startConsole() {
-    if (!this->isStopped)
-        return;
+void MarqueeConsole::run() {
+	if (this->stopFlag != true)
+		return;
 
-    char backspaceKey = 8;
-    char enterKey = 13;
-    this->isStopped = false;
-    this->_active = true;
-    int key = 0;
 
-    std::thread renderThread(&MarqueeConsole::render, this);
-    renderThread.detach();
+	char DELETE = 8;
+	char ENTER = 13;
+	this->stopFlag = false;
+	this->_active = true;
+	int key = 0;
 
-    while (!this->isStopped) {
-        if (_kbhit()) {
-            key = _getch();
-            if (key == backspaceKey) {
-                if (!this->userInput.empty()) {
-                    this->userInput.pop_back();
-                }
-            } else if (key == enterKey) {
-                handleCommand();
-                this->userInput = "";
-            } else {
-                this->userInput.push_back(key);
-            }
-        }
-    }
+	std::thread outputThread(&MarqueeConsole::draw, this);
+	outputThread.detach();
+
+	while (!this->stopFlag) {
+		if (_kbhit()) {
+			key = _getch();
+			if (key == DELETE) {
+				if (this->input.size() > 0) this->input.pop_back();
+			}
+			else if (key == ENTER) {
+				processCommand();
+				this->input = "";
+			}
+			else {
+				this->input.push_back(key);
+			}
+		}
+	}
 }
 
-void MarqueeConsole::terminateConsole() {
-    this->isStopped = true;
+void MarqueeConsole::stop() {
+	stopFlag = true;
 }
 
-void MarqueeConsole::render() {
-    std::string marqueeMessage = "Hello world in marquee!";
+void MarqueeConsole::draw() {
+	std::string message = "Hello world in marquee!";
 
-    auto [consoleWidth, consoleHeight] = getWindowSize();
-    int topBoundary = 3;
-    int bottomBoundary = consoleHeight - 3;
-    int rightBoundary = consoleWidth - marqueeMessage.size();
-    int leftBoundary = 0;
+	std::tuple<int, int> bounds = getWindowSize();
+	int top = 3;
+	int bottom = std::get<1>(bounds) - 3;
+	int right = std::get<0>(bounds) - message.size();
+	int left = 0;
+	int x = left;
+	int y = top;
+	bool moveUp = false;
+	bool moveLeft = false;
 
-    int xPosition = leftBoundary;
-    int yPosition = topBoundary;
+	while (!this->stopFlag) {
+		system("cls");
 
-    bool moveUpward = false;
-    bool moveLeftward = false;
+		for (int i = 0; i < 41; i++) std::cout << '*';
+		std::cout << std::endl;
+		std::cout << "* Displaying a marquee console! *" << std::endl;
+		for (int i = 0; i < 41; i++) std::cout << '*';
+		std::cout << std::endl;
 
-    while (!this->isStopped) {
-        system("cls");
+		std::string::difference_type n = std::count(this->previous.begin(), this->previous.end(), '\n');
 
-        for (int i = 0; i < 41; i++) std::cout << '*';
-        std::cout << std::endl;
-        std::cout << "* Displaying a marquee console! *" << std::endl;
-        for (int i = 0; i < 41; i++) std::cout << '*';
-        std::cout << std::endl;
+		writeTextAt(y, x, message);
+		moveCursorTo(bottom + 1, left);
+		std::cout << this->previous;
+		std::cout << "root\\marquee:\\> " << this->input << std::endl;
+		moveCursorTo(bottom + 1 + n, left + 16 + this->input.size());
 
-        PrintAtCoords(yPosition, xPosition, marqueeMessage);
+		if (moveUp) {
+			y--;
+			if (y <= top) moveUp = false;
+		}
+		else {
+			y++;
+			if (y >= bottom) moveUp = true;
+		}
 
-        displayCommandHistory();
-        displayPrompt();
+		if (moveLeft) {
+			x--;
+			if (x <= left) moveLeft = false;
+		}
+		else {
+			x++;
+			if (x >= right) moveLeft = true;
+		}
 
-        moveMarquee(xPosition, yPosition, moveUpward, moveLeftward, leftBoundary, rightBoundary, topBoundary, bottomBoundary);
-        std::this_thread::sleep_for(std::chrono::milliseconds(this->frameInterval));
-    }
-
-    this->_active = false;
+		std::this_thread::sleep_for(std::chrono::milliseconds(this->interval));
+	}
+	this->_active = false;
 }
 
-void MarqueeConsole::handleCommand() {
-    if (this->userInput == "exit") {
-        this->commandHistory = "";
-        this->terminateConsole();
-    } else if (this->userInput.empty()) {
-        this->commandHistory += "root\\marquee:\\> \n";
-    } else {
-        this->commandHistory += "root\\marquee:\\> " + this->userInput + "\n";
-        this->commandHistory += "Command processed: " + this->userInput + "\n";
-    }
+void MarqueeConsole::processCommand() {
+	if (this->input == "exit") {
+		this->previous = "";
+		this->stop();
+	}
+	else if (this->input == "") {
+		this->previous += "root\\marquee:\\> \n";
+	}
+	else {
+		this->previous += "root\\marquee:\\> " + this->input + "\n";
+		this->previous += "Command processed: " + this->input + "\n";
+	}
 }
 
-void MarqueeConsole::moveMarquee(
-    int& xPosition, int& yPosition, bool& moveUpward, bool& moveLeftward,
-    int leftBoundary, int rightBoundary, int topBoundary, int bottomBoundary) {
-    if (moveUpward) {
-        yPosition--;
-        if (yPosition <= topBoundary) moveUpward = false;
-    } else {
-        yPosition++;
-        if (yPosition >= bottomBoundary) moveUpward = true;
-    }
-
-    if (moveLeftward) {
-        xPosition--;
-        if (xPosition <= leftBoundary) moveLeftward = false;
-    } else {
-        xPosition++;
-        if (xPosition >= rightBoundary) moveLeftward = true;
-    }
-}
-
-void MarqueeConsole::displayCommandHistory() {
-    auto [consoleWidth, consoleHeight] = getWindowSize();
-    int bottomLine = consoleHeight - 3;
-    int commandPromptLine = bottomLine + 1;
-    int historyLine = bottomLine;
-
-    SetCursorPosition(historyLine, 0);
-    std::cout << this->commandHistory;
-
-    SetCursorPosition(commandPromptLine, 0);
-    std::cout << "root\\marquee:\\> " << this->userInput;
-}
