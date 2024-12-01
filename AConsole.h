@@ -11,10 +11,10 @@ public:
 	typedef std::string String;
 	AConsole(String name);
 	~AConsole() = default;
-        bool isConsoleActive() { return this->_active; }
-        bool isRemovable() { return this->removable; };
-        virtual void start();
-        virtual void terminate();
+        bool isActive() { return this->_active; }
+        bool canRemove() { return this->canRemove; };
+        virtual void run();
+        virtual void stop();
 
 
 
@@ -29,8 +29,8 @@ protected:
     std::tuple<short, short> fetchConsoleSize() const;
 
     String consoleName;
-    bool active = false;
-    bool removable = false;
+    bool _active = false;
+    bool _canRemove  = false;
 };
 
 #endif  // !ACONSOLE_H
