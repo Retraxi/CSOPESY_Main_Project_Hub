@@ -6,27 +6,22 @@
 #include <memory>
 #include <string>
 
-ConsoleManager* ConsoleManager::instance = nullptr; 
+ConsoleManager* ConsoleManager::ptr = nullptr;
 
 ConsoleManager* ConsoleManager::getInstance() {
-    return instance;
+ return ConsoleManager::ptr;
 }
 
 void ConsoleManager::initializeManager() {
-    instance = new ConsoleManager();
+    ConsoleManager::ptr = new ConsoleManager();
 }
 
 void ConsoleManager::shutdownManager() {
-    delete instance;
-    instance = nullptr;
+      ConsoleManager::ptr = nullptr;
 }
 
-void ConsoleManager::launch() {
-    if (activeConsole) {
-        activeConsole->run();
-    } else {
-        std::cerr << "No active console to launch." << std::endl;
-    }
+void ConsoleManager::start() {
+    this->_current->start();
 }
 
 bool ConsoleManager::createConsole(const std::string& name, ConsolePtr console) {
