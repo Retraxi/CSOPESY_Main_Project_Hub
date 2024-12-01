@@ -26,13 +26,16 @@ public:
     void startFCFS(int delay);
     void startSJF(int delay, bool preemptive);
     void startRR(int delay, int quantumCycles);
+
     void stop();
     void destroy();
+
     static void initialize(int cpuCount,
         float batchProcessFreq,
         int minIns, int maxIns,
         int minMemProc, int maxMemProc,
         int maxMem, int minPage, int maxPage);
+
     void addProcess(std::shared_ptr<Process> process);
     void schedulerTest();
     void schedulerTestStop();
