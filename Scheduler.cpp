@@ -63,13 +63,6 @@ void Scheduler::startFCFS(int delay) {
         t.detach();
     }
 }
-void Scheduler::startSJF(int delay, bool preemptive) {
-    if (this->running == false) {
-        this->running = true;
-        std::thread t(&Scheduler::runSJF, this, delay, preemptive);
-        t.detach();
-    }
-}
 
 void Scheduler::startRR(int delay, int quantumCycles) {
     if (this->running == false) {
@@ -89,12 +82,7 @@ void Scheduler::destroy() {
 
 void Scheduler::addProcess(std::shared_ptr<Process> process) {
     std::lock_guard<std::mutex> lock(this->mtx);
-    if (Config::_scheduler == "sjf") {
-        this->_readyQueueSJF.push(process);
-    }
-    else {
-        this->_readyQueue.push(process);
-    }
+    this->_readyQueue.push(process);
     this->_processList.push_back(process);
 }
 
@@ -218,64 +206,6 @@ void Scheduler::runFCFS(float delay) { // FCFS
     }
 }
 
-void Scheduler::runSJF(float delay, bool preemptive) { // SJF
-    std::unique_lock<std::mutex> lock(this->mtx);
-    lock.unlock();
-    if (preemptive) {
-        while (this->running) {
-            lock.lock();
-            for (int i = 0; i < this->_cpuList.size(); i++) {
-                std::shared_ptr<CPU> cpu = this->_cpuList.at(i);
-                std::shared_ptr<Process> oldProcess = cpu->getProcess();
-                if (oldProcess != nullptr && oldProcess->hasFinished()) {
-                    _memMan->deallocate(oldProcess);
-                }
-                cpu->setProcess(nullptr);
-
-                if (oldProcess != nullptr && !oldProcess->hasFinished()) this->_readyQueueSJF.push(oldProcess);
-
-                if (!this->_readyQueueSJF.empty()) {
-                    std::shared_ptr<Process> newProcess = this->_readyQueueSJF.top();
-                    this->_readyQueueSJF.pop();
-                    if (_memMan->allocate(newProcess)) {
-                        cpu->setProcess(newProcess);
-                    }
-                    else {
-                        this->_readyQueueSJF.push(newProcess);
-                    }
-                }
-            }
-            lock.unlock();
-        }
-    }
-    else {
-        while (this->running) {
-            for (int i = 0; i < this->_cpuList.size(); i++) {
-                std::shared_ptr<CPU> cpu = this->_cpuList.at(i);
-                if (cpu->isReady()) {
-                    if (cpu->getProcess() != nullptr && cpu->getProcess()->hasFinished()) {
-                        _memMan->deallocate(cpu->getProcess());
-                        cpu->setProcess(nullptr);
-                    }
-                    if (this->_readyQueueSJF.size() > 0) {
-                        if (_memMan->allocate(this->_readyQueueSJF.top())) {
-                            cpu->setProcess(this->_readyQueueSJF.top());
-                            this->_readyQueueSJF.pop();
-                            this->running = true;
-                        }
-                    }
-                }
-                //else {
-                //    if (this->running == false) {
-                //        std::chrono::duration<float> duration(delay);
-                //        std::this_thread::sleep_for(duration);
-                //        this->running = true;
-                //    }
-                //}
-            }
-        }
-    }
-}
 
 void Scheduler::runRR(float delay, int quantumCycles) { // RR
     auto start = std::chrono::steady_clock::now();
@@ -342,7 +272,7 @@ void Scheduler::processSmi() {
     }
     std::cout << std::endl;
 
-    std::cout << "| PROCESS-SMI V01.00 \t Driver Version: 01.00 |" << std::endl;
+    std::cout << "| PROCESS-SMI  \t Driver Version: 01.00 |" << std::endl;
 
     for (int i = 0; i < 48; i++) {
         std::cout << "-";
