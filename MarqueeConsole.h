@@ -19,19 +19,23 @@ public:
 	
 	MarqueeConsole(int refreshRate);
 	~MarqueeConsole() = default;
-        void run;
-        void stop();
+       void startConsole();
+       void terminateConsole();
 
 private:
-	void draw();
-	void processCommand();
+	void render();
+	void handleCommand();
+        void moveMarquee();
 
-	bool stopFlag = true;
-	int refreshRate;
-	int interval;
+	
+       bool isStopped = true; 
+	 int frameRate;
+         int frameInterval;
 
-	std::string input = "";
-	std::string previous = "";
+	 std::string userInput = "";
+	  std::string commandHistory = "";
 };
 
 #endif // !MARQUEECONSOLE_H
+
+
