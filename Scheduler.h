@@ -24,7 +24,6 @@ public:
     static Scheduler* get();
 
     void startFCFS(int delay);
-    void startSJF(int delay, bool preemptive);
     void startRR(int delay, int quantumCycles);
 
     void stop();
@@ -54,9 +53,10 @@ private:
 
     std::mutex mtx;
 
-    void runFCFS(float delay); // FCFS
-    void runSJF(float delay, bool preemptive); // SJF
-    void runRR(float delay, int quantumCycles); // RR
+    void runFCFS(float delay); 
+    
+
+void runRR(float delay, int quantumCycles);
 
     void schedulerRun();
 
@@ -65,7 +65,6 @@ private:
     queue<shared_ptr<Process>> _readyQueue;
     vector<shared_ptr<CPU>> _cpuList;
     vector<shared_ptr<Process>> _processList;
-    priority_queue<shared_ptr<Process>, std::vector<shared_ptr<Process>>, compare> _readyQueueSJF;
     MemoryManager* _memMan = nullptr;
 
     float batchProcessFreq;
