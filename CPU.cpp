@@ -1,20 +1,23 @@
-#include "Core.h"
-#include <thread>
-#include <memory>
-#include <mutex>
+#include "CPU.h"
+
 #include "Process.h"
 
-int Core::nextID = 0;
-int Core::msDelay = 50;
+#include <memory>
+#include <mutex>
+#include <thread>
 
-Core::Core() {
+
+int CPU::nextID = 0;
+int CPU::msDelay = 50;
+
+CPU::CPU() {
     this->_id = CPU::nextID;
-    Core::nextID++;
+    CPU::nextID++;
     std::thread tickThread(&CPU::run, this);
     tickThread.detach();
 }
 
-void Core::setProcess(std::shared_ptr<Process> process) {
+void CPU::setProcess(std::shared_ptr<Process> process) {
     std::lock_guard<std::mutex> lock(this->mtx);
     if (this->_process != nullptr) {
         this->_process->setCPUCoreID(-1);
@@ -27,14 +30,12 @@ void CPU::run() {
     this->_stopFlag = false;
     while (!this->_stopFlag) {
         this->execute();
-        std::this_thread::sleep_for(std::chrono::milliseconds(Core::msDelay));
+        std::this_thread::sleep_for(std::chrono::milliseconds(CPU::msDelay));
     }
     this->_ready = true;
 }
 
-
-
-void Core::execute() {
+void CPU::execute() {
     std::lock_guard<std::mutex> lock(this->mtx);
     this->_totalTicks++;
     if (this->_process != nullptr && !this->_process->hasFinished()) {
