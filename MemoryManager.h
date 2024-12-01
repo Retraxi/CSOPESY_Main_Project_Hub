@@ -28,3 +28,5 @@ private:
 };
 
 #endif // !MEMORYMANAGER_H
+
+
