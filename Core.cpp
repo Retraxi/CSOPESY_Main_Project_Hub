@@ -1,83 +1,50 @@
 #include "Core.h"
 #include <thread>
+#include <memory>
+#include <mutex>
+#include "Process.h"
 
-Core::Core(int coreID, int execDelay)
-{
-	this->stop = false;
-	this->coreID = coreID;
-	this->ready = true;
-	this->running = false;
-	this->simulationDelay = execDelay;
-	std::thread runningThread(&Core::run, this); //One thread per Core worker
-	runningThread.detach();
-}	
+int Core::nextID = 0;
+int Core::msDelay = 50;
 
-void Core::shutdown()
-{
-	this->stop = true;
+Core::Core() {
+    this->_id = CPU::nextID;
+    Core::nextID++;
+    std::thread tickThread(&CPU::run, this);
+    tickThread.detach();
 }
 
-int Core::getID()
-{
-	return this->coreID;
+void Core::setProcess(std::shared_ptr<Process> process) {
+    std::lock_guard<std::mutex> lock(this->mtx);
+    if (this->_process != nullptr) {
+        this->_process->setCPUCoreID(-1);
+    }
+    this->_process = process;
+    this->_ready = process == nullptr;
 }
 
-void Core::run()
-{
-	while (!this->stop) {
-		
-		this->execute();
-		std::this_thread::sleep_for(std::chrono::milliseconds(simulationDelay)); //allows for some time difference
-		this->totalTicks++;
-	}
-	this->running = true;
+void CPU::run() {
+    this->_stopFlag = false;
+    while (!this->_stopFlag) {
+        this->execute();
+        std::this_thread::sleep_for(std::chrono::milliseconds(Core::msDelay));
+    }
+    this->_ready = true;
 }
 
-void Core::execute()
-{
-	//this will be the function to be continually called
-	std::lock_guard<std::mutex> lock(this->mtx); //files were going haywire without this
-	if (this->process != nullptr && !this->process->isDone())
-	{
-		this->process->setCoreID(this->coreID);
-		this->process->execute();
-		if (this->process->isDone())
-		{
-			//deallocate the process
-			this->ready = true;
-			this->running = false;
-		}
-	}
-}
 
-bool Core::isReady()
-{
-	return this->ready;
-}
 
-void Core::setReady(bool status)
-{
-	std::lock_guard<std::mutex> lock(this->mtx);
-	this->ready = status;
+void Core::execute() {
+    std::lock_guard<std::mutex> lock(this->mtx);
+    this->_totalTicks++;
+    if (this->_process != nullptr && !this->_process->hasFinished()) {
+        this->_process->setCPUCoreID(this->_id);
+        this->_process->execute();
+        if (this->_process->hasFinished()) {
+            this->_ready = true;
+        }
+    }
+    else {
+        this->_inactiveTicks++;
+    }
 }
-
-void Core::setProcess(std::shared_ptr<Process> process)
-{
-	std::lock_guard<std::mutex> lock(this->mtx);
-	this->process = process;
-	if (this->process == nullptr)
-	{
-		this->ready = true;
-	}
-}
-
-std::shared_ptr<Process> Core::getProcess()
-{
-	return this->process;
-}
-
-bool Core::isRunning()
-{
-	return this->running;
-}
-
