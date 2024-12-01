@@ -1,56 +1,19 @@
 #pragma once
-#include "Process.h"
-#include <mutex>
-
-
-class Core 
-{
-public:
-	//declarations
-	Core(int coreID, int execDelay);
-	~Core() = default;
-	int coreID;
-
-	void setProcess(std::shared_ptr<Process> process); 
-	std::shared_ptr<Process> getProcess();
-	bool isRunning();
-	
-	bool isReady();
-	void setReady(bool status);
-
-	int getID();
-	void shutdown();
-	void run();
-	void execute();
-
-private:
-	std::mutex mtx;
-	bool running;
-	bool ready;
-	bool stop;
-	int totalTicks = 0;
-
-	int simulationDelay;
-	std::shared_ptr<Process> process = nullptr;
-};
-
-
-
-#pragma once
-#ifndef CORE_H
-#define CORE_H
+#ifndef CPU_H
+#define CPU_H
 
 #include <memory>
 #include <string>
-#include <mutex>
+
 #include "Process.h"
+#include <mutex>
 
-class Core {
+
+class CPU {
 public:
-    Core();
-    ~Core() = default;
-
-     void setProcess(std::shared_ptr<Process> process);
+    CPU();
+    ~CPU() = default;
+    void setProcess(std::shared_ptr<Process> process);
     int getId() const { return _id; };
     std::string getProcessName() const { return this->_process->getName(); };
     int getProcessCommandCounter() const { return this->_process->getCommandCounter(); };
@@ -66,7 +29,7 @@ public:
     static void setMsDelay(int delay) { CPU::msDelay = delay; };
 
 private:
-     void run();
+    void run();
     void execute();
 
     std::mutex mtx;
@@ -80,7 +43,6 @@ private:
     int _totalTicks = 0;
 
     std::shared_ptr<Process> _process = nullptr;
-
 };
 
-#endif // !CORE_H
+#endif // !CPU_H
