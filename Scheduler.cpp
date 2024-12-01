@@ -195,13 +195,7 @@ void Scheduler::runFCFS(float delay) { // FCFS
                     }
                 }
             }
-            //else {
-            //    if (this->running == false) {
-            //        std::chrono::duration<float> duration(delay);
-            //        std::this_thread::sleep_for(duration);
-            //        this->running = true;
-            //    }
-            //}
+         
         }
     }
 }
@@ -257,12 +251,7 @@ void Scheduler::runRR(float delay, int quantumCycles) { // RR
             }
         }
 
-        //// If no tasks were scheduled, sleep for delay
-        //if (!this->running) {
-        //    std::chrono::duration<float> duration(delay);
-        //    std::this_thread::sleep_for(duration);
-        //    this->running = true; // Set running to true to continue scheduling
-        //}
+       
     }
 }
 
