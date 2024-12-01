@@ -17,7 +17,7 @@ private:
 	void printProcesses();
 };
 
-/*
+
 #pragma once
 #ifndef MAINCONSOLE_H
 #define MAINCONSOLE_H
@@ -54,4 +54,4 @@ private:
 #endif // !MAINCONSOLE_H
 
 
-*/
+
