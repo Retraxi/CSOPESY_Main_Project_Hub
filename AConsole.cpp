@@ -4,19 +4,22 @@
 #include <windows.h>
 #include <tuple>
 
-AConsole::AConsole(String consoleName) : consoleName(std::move(consoleName)) {}
 
-void AConsole::start() {
-    std::cout << "Activating Console: " << this->consoleName << std::endl;
-    this->active = true;
-    std::this_thread::sleep_for(std::chrono::milliseconds(50)); // Increased delay slightly
-    this->terminate();
+AConsole::AConsole(String name) {
+    this->_name = name;
+}
+
+void AConsole::run() {
+    std::cout << "Activating Console: " << this->_name << std::endl;
+    this->_active  = true;
+    std::this_thread::sleep_for(std::chrono::milliseconds(30)); // Increased delay slightly
+    this->stop();
 }
 
 void AConsole::terminate() {
     if (this->active) {
         this->active = false;
-        std::cout << "Deactivating Console: " << this->consoleName << std::endl;
+        std::cout << "Deactivating Console: " << this->_name  << std::endl;
     }
 }
 
