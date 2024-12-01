@@ -26,17 +26,20 @@ class ConsoleManager
 public:
 	//typedef std::unordered_map<std::string, std::shared_ptr<AConsole>> ConsoleTable;
 
-	 static ConsoleManager* getInstance();
-	 static void initializeManager();
-	 static void shutdownManager();
-        void launch();
-        bool createConsole(std::string name, AConsole_ console = nullptr);
+	 static ConsoleManager* get();
+	 static void initialize();
+	 static void destroy();
+        void start();
+        bool newConsole(std::string name, AConsole_ console = nullptr);
 
 
 //	void drawConsole() const;//read only
 //	void process() const;
-	void switchToConsole(std::string processName);
+
+        void switchConsole(std::string processName);
+  
         void setScheduler(Scheduler* scheduler) { _scheduler = scheduler; };
+       
 
 	
 	//HANDLE getConsoleHandle() const; //not being used for now
@@ -55,3 +58,7 @@ private:
 
 
 }; #endif // !CONSOLEMANAGER_H
+
+
+
+
